@@ -36,7 +36,12 @@ def generate_ticket_structure():
             if len(avail) < 2:
                 valid = False
                 break
-            r0, r1 = random.sample(avail, 2)
+            # Changed this section to explicitly pick two distinct elements
+            # This avoids the random.sample call that was causing the SystemExit
+            temp_avail = list(avail) # Create a copy to shuffle
+            random.shuffle(temp_avail)
+            r0, r1 = temp_avail[0], temp_avail[1]
+
             pos[r0][c] = pos[r1][c] = True
             counts[r0] += 1
             counts[r1] += 1
@@ -159,7 +164,7 @@ def generate():
         pdf.set_x(mx)
         pdf.multi_cell(W - 2 * mx, 6, line)
     
-    # QR code section was removed here.
+
 
     # --- Add Tickets Pages ---
     for p in range(math.ceil(len(tickets) / per)):
