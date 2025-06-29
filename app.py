@@ -162,8 +162,6 @@ def generate():
     for line in rules_text:
         pdf.set_x(mx)
         pdf.multi_cell(W - 2 * mx, 6, line)
-    
-
 
     # --- Add Tickets Pages ---
     for p in range(math.ceil(len(tickets) / per)):
@@ -218,7 +216,7 @@ def generate():
                     num = data[r][c]
                     if num:
                         sw = pdf.get_string_width(str(num))
-                        pdf.set_xy(cx + (cw - sw) / 2.7, cy + (ch - pdf.font_size) / 2) # Centering numbers
+                        pdf.set_xy(cx + (cw - sw) / 2.8, cy + (ch - pdf.font_size) / 2) # Centering numbers
                         pdf.cell(sw, pdf.font_size, str(num), border=0)
 
 
@@ -235,7 +233,11 @@ def generate():
             
             pdf.set_xy(x0, footer_y_start + footer_vertical_offset)
 
-            footer_text = host
+            footer_text = host # Initialize with host name
+            if phone: # Add phone number if it exists
+                footer_text += f" - {phone}" 
+            if message: # Add message if it exists
+                footer_text += f" - {message}"
 
             pdf.cell(tw, fh, footer_text, align='C')
 
