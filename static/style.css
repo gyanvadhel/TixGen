@@ -107,9 +107,3 @@ body.dark .ticket-cell {
   border-color: #666;
   color: #fff;
 }
-
-body.dark .preview-header,
-body.dark .preview-footer {
-  background-color: #444 !important;
-  color: #fff !important;
-}
