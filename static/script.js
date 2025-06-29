@@ -1,216 +1,79 @@
-from flask import Flask, render_template, request, send_file
-from io import BytesIO
-import random
-import logging
-from fpdf import FPDF  # fpdf2
+function createPreviewGrid() {
+  const grid = document.getElementById("preview-grid");
+  grid.innerHTML = ""; // Clear existing cells
+  for (let i = 0; i < 27; i++) {
+    const cell = document.createElement("div");
+    cell.className = "ticket-cell";
+    cell.innerText = "12"; // Placeholder number
+    grid.appendChild(cell);
+  }
+}
 
-logging.basicConfig(level=logging.INFO)
-app = Flask(__name__)
+function updatePreview() {
+  const name = document.querySelector('input[name="name"]').value || "Host";
+  const phone = document.querySelector('input[name="phone"]').value.trim();
+  const message = document.querySelector('input[name="custom_message"]').value.trim();
+  const hideTicketNumber = document.getElementById("hide_ticket_number").checked;
 
-def clean_text(text):
-    return str(text).strip() if isinstance(text, str) else ""
+  const headerColor = document.querySelector('input[name="header_color"]').value;
+  const gridColor = document.querySelector('input[name="grid_color"]').value;
+  const fontColor = document.querySelector('input[name="font_color"]').value; // Get the new font color
+  
+  // Overall ticket background will be same as header/footer
+  const ticketBgColor = headerColor; 
+  const pageBgColor = document.querySelector('input[name="page_bg_color"]').value;
 
-def hex_to_rgb(hex_color):
-    hex_color = hex_color.lstrip('#')
-    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+  // Update page background in preview
+  document.getElementById("pdf-bg").style.backgroundColor = pageBgColor;
 
-def generate_perfect_block_of_6():
-    number_pool = [list(range(1 + i * 10, 10 + i * 10)) for i in range(8)]
-    number_pool.append(list(range(80, 91)))
-    number_pool[0] = list(range(1, 10))
+  // Set ticket header
+  const header = document.getElementById("preview-header");
+  header.style.backgroundColor = headerColor;
+  header.style.color = fontColor; // Use selected font color
+  header.innerText = hideTicketNumber ? name : `${name} | Ticket #`; // Update based on checkbox
 
-    for col in number_pool:
-        random.shuffle(col)
+  // Set ticket footer
+  const footer = document.getElementById("preview-footer");
+  footer.style.backgroundColor = headerColor; // Footer background is header color
+  footer.style.color = fontColor; // Use selected font color
+  
+  // Construct footer text: only phone and message
+  let footerText = "";
+  if (phone) {
+    footerText += phone;
+  }
+  if (message) {
+    if (footerText) { // Add a separator if phone number exists
+      footerText += " - ";
+    }
+    footerText += message;
+  }
+  footer.innerText = footerText || "(Optional info)"; // Display placeholder if both are empty
 
-    tickets = [[[None for _ in range(9)] for _ in range(3)] for _ in range(6)]
+  // Update the entire ticket-preview background to ticketBgColor (which is now headerColor)
+  // This covers the space behind the grid cells, header and footer are drawn on top.
+  document.querySelector('.ticket-preview').style.backgroundColor = ticketBgColor;
 
-    for c_idx, col_nums in enumerate(number_pool):
-        positions = [(t, r) for t in range(6) for r in range(3)]
-        selected = random.sample(positions, len(col_nums))
-        for i, num in enumerate(col_nums):
-            t, r = selected[i]
-            tickets[t][r][c_idx] = num
+  // Update ticket grid border and cell colors
+  document.getElementById("preview-grid").style.borderColor = '#000000'; // Black border for grid container
+  const cells = document.querySelectorAll(".ticket-cell");
+  cells.forEach(cell => {
+    cell.style.backgroundColor = gridColor; // Cell background is grid color
+    cell.style.borderColor = '#000000'; // Cell borders are black
+    cell.style.color = fontColor; // Use selected font color for numbers
+  });
+}
 
-    while True:
-        row_counts = [[sum(1 for cell in row if cell) for row in t] for t in tickets]
-        over = [(t, r) for t in range(6) for r in range(3) if row_counts[t][r] > 5]
-        under = [(t, r) for t in range(6) for r in range(3) if row_counts[t][r] < 5]
-        if not over or not under:
-            break
-        from_t, from_r = random.choice(over)
-        to_t, to_r = random.choice(under)
-        for c in range(9):
-            if tickets[from_t][from_r][c] and not tickets[to_t][to_r][c]:
-                tickets[to_t][to_r][c] = tickets[from_t][from_r][c]
-                tickets[from_t][from_r][c] = None
-                break
+// Ensure the grid is created and preview is updated when the DOM is fully loaded
+document.addEventListener("DOMContentLoaded", () => {
+  createPreviewGrid();
+  updatePreview(); // Initial update
 
-    for ticket in tickets:
-        for c in range(9):
-            col = [ticket[r][c] for r in range(3) if ticket[r][c]]
-            col.sort()
-            i = 0
-            for r in range(3):
-                if ticket[r][c]:
-                    ticket[r][c] = col[i]
-                    i += 1
-    return tickets
+  // Add event listeners to all relevant input fields for continuous updates
+  document.querySelectorAll('input[type="color"], input[type="text"], input[type="tel"], input[type="number"]').forEach(input => {
+    input.addEventListener('input', updatePreview); // 'input' event for continuous updates
+  });
 
-@app.route('/')
-def landing_page():
-    return render_template("landing.html")
-
-@app.route('/generator')
-def ticket_generator_page():
-    return render_template("index.html")
-
-@app.route('/generate', methods=['POST'])
-def generate():
-    try:
-        host = clean_text(request.form.get('name', 'Host'))
-        phone = clean_text(request.form.get('phone', ''))
-        message = clean_text(request.form.get('custom_message', ''))
-        hide_ticket_number = 'hide_ticket_number' in request.form
-
-        try:
-            pages = int(request.form.get('pages', 1))
-        except ValueError:
-            pages = 1
-        pages = max(1, min(pages, 10))
-
-        page_bg_color = hex_to_rgb(request.form.get("page_bg_color", "#6A92CD"))
-        header_fill = hex_to_rgb(request.form.get("header_color", "#658950"))
-        grid_color = hex_to_rgb(request.form.get("grid_color", "#8B4513"))
-        font_color = hex_to_rgb(request.form.get("font_color", "#FFFFFF"))
-        footer_fill = header_fill
-        ticket_bg_fill = header_fill
-
-        all_tickets = []
-        for _ in range(pages * 2):
-            all_tickets.extend(generate_perfect_block_of_6())
-
-        pdf = FPDF('P', 'mm', 'A4')
-        pdf.set_auto_page_break(False)
-        pdf.set_font("helvetica", size=12)
-
-        W, H = 210, 297
-        mx, my = 10, 10
-        gx, gy = 4, 7
-        cp = 2
-        per_page = 12
-        rows_on_page = 6
-        aw = W - 2 * mx - (cp - 1) * gx
-        tw = aw / cp
-        hh = 6
-        fh = 5
-        ch = 9
-        cw = tw / 9
-        gh = ch * 3
-        th = hh + gh + fh
-
-        # --- Instructions Page (white background, black text, bigger font) ---
-        pdf.add_page()
-        pdf.set_fill_color(255, 255, 255)
-        pdf.rect(0, 0, W, H, 'F')
-        pdf.set_text_color(0, 0, 0)
-
-        pdf.set_font("helvetica", 'B', 22)
-        pdf.set_xy(mx, my)
-        pdf.cell(W - 2 * mx, 12, 'How to Play Tambola (Housie)', align='C')
-        pdf.ln(18)
-
-        pdf.set_font("helvetica", '', 14)
-        instructions = [
-            "Tambola (also called Housie) is a game of luck and numbers.",
-            "",
-            "Objective:",
-            "Mark off numbers on your ticket to complete winning patterns.",
-            "",
-            "How to Play:",
-            "1. A number will be called out (between 1 to 90).",
-            "2. If it appears on your ticket, mark it.",
-            "3. Be the first to complete and claim a winning pattern.",
-            "",
-            "Common Winning Patterns:",
-            "- Early Five: First 5 numbers marked on a ticket.",
-            "- Top Line: All 5 numbers in the top row.",
-            "- Middle Line: All 5 numbers in the middle row.",
-            "- Bottom Line: All 5 numbers in the bottom row.",
-            "- Full House: All 15 numbers on your ticket.",
-            "",
-            "Note: Call out your win immediately. Late claims are invalid!"
-        ]
-        for line in instructions:
-            pdf.set_x(mx)
-            pdf.multi_cell(W - 2 * mx, 8, line)
-
-        # --- Ticket Pages ---
-        for p in range(pages):
-            pdf.add_page()
-            pdf.set_fill_color(*page_bg_color)
-            pdf.rect(0, 0, W, H, 'F')
-
-            for i in range(per_page):
-                idx = p * per_page + i
-                if idx >= len(all_tickets): break
-                data = all_tickets[idx]
-
-                colp = 0 if i < rows_on_page else 1
-                rowp = i % rows_on_page
-                x0 = mx + colp * (tw + gx)
-                y0 = my + rowp * (th + gy)
-
-                pdf.set_fill_color(*ticket_bg_fill)
-                pdf.rect(x0, y0, tw, th, 'F')
-
-                # Header
-                pdf.set_fill_color(*header_fill)
-                pdf.rect(x0, y0, tw, hh, 'F')
-                pdf.set_text_color(*font_color)
-                pdf.set_font("helvetica", 'B', 10)
-
-                header_text = host
-                if not hide_ticket_number:
-                    header_text += f" | Ticket {idx + 1}"
-                while pdf.get_string_width(header_text) > (tw - 4) and len(header_text) > 0:
-                    header_text = header_text[:-1]
-                pdf.set_xy(x0, y0)
-                pdf.cell(tw, hh, header_text, 0, align='C')
-
-                # Grid
-                pdf.set_font("helvetica", 'B', 16)
-                for r in range(3):
-                    for c in range(9):
-                        cx, cy = x0 + c * cw, y0 + hh + r * ch
-                        pdf.set_fill_color(*grid_color)
-                        pdf.rect(cx, cy, cw, ch, 'FD')
-                        num = data[r][c]
-                        if num:
-                            txt = str(num)
-                            sw = pdf.get_string_width(txt)
-                            pdf.set_xy(cx + (cw - sw) / 2.8, cy + (ch - pdf.font_size) / 2 + 1)
-                            pdf.cell(sw, pdf.font_size, txt, 0)
-
-                # Footer
-                footer_parts = [host]
-                if phone: footer_parts.append(phone)
-                if message: footer_parts.append(message)
-                footer_text = " | ".join(footer_parts)
-                while pdf.get_string_width(footer_text) > (tw - 4) and len(footer_text) > 0:
-                    footer_text = footer_text[:-1]
-                footer_y = y0 + hh + gh
-                pdf.set_fill_color(*footer_fill)
-                pdf.rect(x0, footer_y, tw, fh, 'F')
-                pdf.set_xy(x0, footer_y)
-                pdf.set_font("helvetica", 'I', 9)
-                pdf.cell(tw, fh, footer_text, 0, align='C')
-
-        pdf_bytes = pdf.output(dest='S')
-        return send_file(BytesIO(pdf_bytes), download_name="tixgen.pdf", as_attachment=True, mimetype='application/pdf')
-
-    except Exception as e:
-        logging.exception("Error during PDF generation:")
-        return f"<h1>Internal Server Error</h1><p>{e}</p>", 500
-
-if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0')
+  // Special handling for checkbox as it uses 'change' event
+  document.getElementById('hide_ticket_number').addEventListener('change', updatePreview);
+});
