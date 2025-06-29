@@ -13,58 +13,99 @@ col_ranges = [list(range(1, 10))] + [list(range(i, i + 10)) for i in range(10, 8
 col_supply = [len(r) for r in col_ranges]
 
 def generate_ticket_structure():
-    for _ in range(10**6):
-        pos = [[False] * 9 for _ in range(3)]
-        cols2 = sorted(random.sample(range(9), 6))
-        cols1 = [c for c in range(9) if c not in cols2]
-        counts = [0, 0, 0]
-        rows1 = random.sample([0, 1, 2], 3)
-        valid = True
-        for i, c in enumerate(cols1):
-            r = rows1[i]
-            if counts[r] < 5:
+    """
+    Generates a valid Tambola ticket structure (3 rows x 9 columns)
+    with 5 numbers per row and at least 1 number per column.
+    This uses a more deterministic approach to ensure validity quickly.
+    """
+    while True: # Keep trying until a valid structure is generated
+        pos = [[False] * 9 for _ in range(3)] # Initialize 3x9 grid
+        
+        # A standard Tambola ticket has:
+        # - 3 columns with 1 number
+        # - 6 columns with 2 numbers
+        # This totals 3*1 + 6*2 = 15 numbers (5 per row)
+        
+        # Randomly assign which columns will have 1 number and which will have 2
+        all_cols_indices = list(range(9))
+        random.shuffle(all_cols_indices)
+        
+        # First 3 columns will have 1 number
+        single_num_cols = all_cols_indices[:3]
+        # Remaining 6 columns will have 2 numbers
+        double_num_cols = all_cols_indices[3:]
+        
+        # Keep track of how many numbers are placed in each row
+        row_current_fill = [0, 0, 0] # Max 5 numbers per row
+        
+        # List of (row_idx, col_idx) pairs to fill
+        positions_to_place = []
+
+        # Step 1: Place 1 number in each of the 'single_num_cols'
+        # Distribute these across rows, ensuring rows don't get full prematurely
+        single_col_row_choices = list(range(3)) # Rows 0, 1, 2
+        random.shuffle(single_col_row_choices) # Random order for assigning single numbers
+        
+        for i, col_idx in enumerate(single_num_cols):
+            row_idx = single_col_row_choices[i] # Assign unique row for each of these 3 single numbers initially
+            positions_to_place.append((row_idx, col_idx))
+            row_current_fill[row_idx] += 1
+
+        # Step 2: Place 2 numbers in each of the 'double_num_cols'
+        for col_idx in double_num_cols:
+            # Find rows that are not yet full (less than 5 numbers)
+            available_rows = [r for r in range(3) if row_current_fill[r] < 5]
+            
+            if len(available_rows) < 2:
+                # This scenario should be rare with proper initial setup, but indicates failure
+                # Need to restart if we can't place 2 numbers in distinct rows
+                break # Break inner loop, outer while loop will retry
+            
+            # Select 2 distinct rows from available ones
+            chosen_rows_for_col = random.sample(available_rows, 2)
+            
+            for row_idx in chosen_rows_for_col:
+                positions_to_place.append((row_idx, col_idx))
+                row_current_fill[row_idx] += 1
+        
+        else: # This 'else' block executes if the inner 'for col_idx' loop completed without a 'break'
+            # All columns processed, now populate the actual 'pos' grid
+            for r, c in positions_to_place:
                 pos[r][c] = True
-                counts[r] += 1
-            else:
-                valid = False
-                break
-        if not valid:
-            continue
-        for c in cols2:
-            avail = [r for r in range(3) if counts[r] < 5]
-            if len(avail) < 2:
-                valid = False
-                break
-            # Changed this section to explicitly pick two distinct elements
-            # This avoids the random.sample call that was causing the SystemExit
-            temp_avail = list(avail) # Create a copy to shuffle
-            random.shuffle(temp_avail)
-            r0, r1 = temp_avail[0], temp_avail[1]
+            
+            # Final validation: check if all rows have exactly 5 numbers
+            # And all columns have at least one number (implicitly handled by col_counts_config)
+            if all(count == 5 for count in row_current_fill) and \
+               all(any(pos[r_check][c_check] for r_check in range(3)) for c_check in range(9)):
+                return pos
+        
+        # If any break occurred or final validation failed, the 'while True' loop continues for a new attempt
 
-            pos[r0][c] = pos[r1][c] = True
-            counts[r0] += 1
-            counts[r1] += 1
-        if valid and all(cnt == 5 for cnt in counts) and all(any(pos[r][c] for r in range(3)) for c in range(9)):
-            return pos
-    raise RuntimeError("Ticket structure generation failed")
-
+# The `generate_perfect_block_of_6()`'s `10**6` loop is still there as a fallback
+# but with the improved `generate_ticket_structure()`, it should rarely run
+# more than a few iterations.
 def generate_perfect_block_of_6():
-    for _ in range(10**6):
+    for _ in range(10**6): # Max attempts for finding a perfect block
         grids = [generate_ticket_structure() for _ in range(6)]
+        
+        # Check if the generated grids form a perfect block across all 9 columns
+        # (i.e., each column range has its full supply of numbers used exactly once across 6 tickets)
         demand = [sum(grids[t][r][c] for t in range(6) for r in range(3)) for c in range(9)]
+        
         if demand == col_supply:
             tickets = [[[None]*9 for _ in range(3)] for _ in range(6)]
-            for c in range(9):
-                nums = col_ranges[c].copy()
-                random.shuffle(nums)
+            for c in range(9): # For each column (1-9, 10-19, etc.)
+                nums = col_ranges[c].copy() # Get numbers for this column's range
+                random.shuffle(nums) # Shuffle them
                 idx = 0
-                for t in range(6):
-                    for r in range(3):
-                        if grids[t][r][c]:
-                            tickets[t][r][c] = nums[idx]
+                for t in range(6): # For each ticket in the block
+                    for r in range(3): # For each row in the ticket
+                        if grids[t][r][c]: # If this cell should contain a number
+                            tickets[t][r][c] = nums[idx] # Assign the next number from the shuffled list
                             idx += 1
             return tickets
-    raise RuntimeError("Block generation failed")
+    raise RuntimeError("Block generation failed after 1M tries. This is highly unlikely with optimized ticket structure.")
+
 
 def hex_to_rgb(hex_color):
     hex_color = hex_color.lstrip('#')
@@ -72,12 +113,10 @@ def hex_to_rgb(hex_color):
 
 @app.route('/')
 def landing_page():
-    # This is the new landing page route
     return render_template("landing.html")
 
 @app.route('/generator')
 def ticket_generator_page():
-    # The main ticket generator form is now at /generator
     return render_template("index.html")
 
 @app.route('/generate', methods=['POST'])
@@ -85,7 +124,7 @@ def generate():
     host = request.form.get('name', 'Host')
     phone = request.form.get('phone', '').strip()
     message = request.form.get('custom_message', '').strip()
-    hide_ticket_number = 'hide_ticket_number' in request.form # Checkbox value
+    hide_ticket_number = 'hide_ticket_number' in request.form
 
     try:
         pages = int(request.form.get('pages', 1))
@@ -93,21 +132,18 @@ def generate():
         pages = 1
     pages = max(1, min(pages, 10))
 
-    # Get colors from form
     page_bg_color = hex_to_rgb(request.form.get("page_bg_color", "#6A92CD"))
     header_fill = hex_to_rgb(request.form.get("header_color", "#658950"))
-    footer_fill = header_fill # Footer color matches header
+    footer_fill = header_fill
     grid_color = hex_to_rgb(request.form.get("grid_color", "#8B4513"))
-    # ticket_bg_fill is now derived from header_fill as per request
-    ticket_bg_fill = header_fill 
-    font_color = hex_to_rgb(request.form.get("font_color", "#FFFFFF")) # New font color
+    ticket_bg_fill = header_fill
+    font_color = hex_to_rgb(request.form.get("font_color", "#FFFFFF"))
 
     tickets = []
     blocks = math.ceil(pages * 12 / 6)
     for _ in range(blocks):
         tickets += generate_perfect_block_of_6()
 
-    # Set up PDF
     pdf = FPDF('P', 'mm', 'A4')
     pdf.set_auto_page_break(False)
 
@@ -124,7 +160,7 @@ def generate():
     ch = 9
     cw = tw / 9
     gh = ch * 3
-    th = hh + gh + fh # Exact total ticket height
+    th = hh + gh + fh
 
     # --- Add Instructions Page ---
     pdf.add_page()
@@ -136,7 +172,7 @@ def generate():
     pdf.set_xy(mx, my)
     pdf.cell(W - 2 * mx, 10, 'How to Play Tambola (Housie)', align='C')
 
-    pdf.ln(15) # New line
+    pdf.ln(15)
     pdf.set_font('helvetica', '', 12)
     rules_text = [
         "Tambola, also known as Housie, is a popular game of chance.",
@@ -162,6 +198,7 @@ def generate():
     for line in rules_text:
         pdf.set_x(mx)
         pdf.multi_cell(W - 2 * mx, 6, line)
+    
 
     # --- Add Tickets Pages ---
     for p in range(math.ceil(len(tickets) / per)):
@@ -179,19 +216,18 @@ def generate():
             x0 = mx + colp * (tw + gx)
             y0 = my + rowp * (th + gy)
 
-            # Draw the entire ticket background first with the header/footer color
             pdf.set_fill_color(*ticket_bg_fill)
             pdf.rect(x0, y0, tw, th, style='F')
 
             # Header
             pdf.set_fill_color(*header_fill)
             pdf.rect(x0, y0, tw, hh, style='F')
-            pdf.set_text_color(*font_color) # Use selected font color
+            pdf.set_text_color(*font_color)
             pdf.set_font('helvetica', 'B', 10)
             
             header_text = host
             if not hide_ticket_number:
-                header_text += f" | Ticket {idx + 1}" # Display actual ticket number
+                header_text += f" | Ticket {idx + 1}"
             
             header_text_height = pdf.font_size
             header_vertical_offset = (hh - header_text_height) / 2
@@ -199,33 +235,31 @@ def generate():
             pdf.set_xy(x0, y0 + header_vertical_offset) 
             pdf.cell(tw, hh - 2 * header_vertical_offset, header_text, border=0, align='C')
 
-
             # Grid (cells with their background and black borders)
             pdf.set_font('helvetica', 'B', 16)
-            pdf.set_text_color(*font_color) # Use selected font color
-            pdf.set_fill_color(*grid_color) # Cell foreground color
-            pdf.set_draw_color(0, 0, 0) # Black borders for cells
+            pdf.set_text_color(*font_color)
+            pdf.set_fill_color(*grid_color)
+            pdf.set_draw_color(0, 0, 0)
 
             for r in range(3):
                 for c in range(9):
                     cx = x0 + c * cw
                     cy = y0 + hh + r * ch
-                    pdf.rect(cx, cy, cw, ch, style='F') # Fill cell background with grid_color
-                    pdf.rect(cx, cy, cw, ch, style='D') # Draw cell border
+                    pdf.rect(cx, cy, cw, ch, style='F')
+                    pdf.rect(cx, cy, cw, ch, style='D')
 
                     num = data[r][c]
                     if num:
                         sw = pdf.get_string_width(str(num))
-                        pdf.set_xy(cx + (cw - sw) / 2.8, cy + (ch - pdf.font_size) / 2) # Centering numbers
+                        pdf.set_xy(cx + (cw - sw) / 2, cy + (ch - pdf.font_size) / 2)
                         pdf.cell(sw, pdf.font_size, str(num), border=0)
-
 
             # Footer
             footer_y_start = y0 + hh + gh
             pdf.set_fill_color(*footer_fill)
             pdf.rect(x0, footer_y_start, tw, fh, style='F')
             
-            pdf.set_text_color(*font_color) # Use selected font color
+            pdf.set_text_color(*font_color)
             pdf.set_font('helvetica', 'B', 11)
 
             footer_text_height = pdf.font_size
@@ -233,17 +267,16 @@ def generate():
             
             pdf.set_xy(x0, footer_y_start + footer_vertical_offset)
 
-            if phone: # Add phone number if it exists
-                footer_text += f" - {phone}" 
-            if message: # Add message if it exists
+            footer_text = host
+            if phone:
+                footer_text += f" - {phone}"
+            if message:
                 footer_text += f" - {message}"
 
             pdf.cell(tw, fh, footer_text, align='C')
 
-
-    pdf_output = pdf.output(dest='S')
-    pdf_bytes = pdf_output.encode('latin1') if isinstance(pdf.output(dest='S'), str) else pdf.output(dest='S')
-    pdf_stream = BytesIO(pdf_bytes)
+    output_bytes = pdf.output(dest='S').encode('latin1') if isinstance(pdf.output(dest='S'), str) else pdf.output(dest='S')
+    pdf_stream = BytesIO(output_bytes)
     pdf_stream.seek(0)
     return send_file(pdf_stream, download_name="tickets.pdf", as_attachment=True)
 
