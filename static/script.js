@@ -36,7 +36,19 @@ function updatePreview() {
   const footer = document.getElementById("preview-footer");
   footer.style.backgroundColor = headerColor; // Footer background is header color
   footer.style.color = fontColor; // Use selected font color
-  footer.innerText = name; // Only Host name in footer as per image
+  
+  // Construct footer text: only phone and message
+  let footerText = "";
+  if (phone) {
+    footerText += phone;
+  }
+  if (message) {
+    if (footerText) { // Add a separator if phone number exists
+      footerText += " - ";
+    }
+    footerText += message;
+  }
+  footer.innerText = footerText || "(Optional info)"; // Display placeholder if both are empty
 
   // Update the entire ticket-preview background to ticketBgColor (which is now headerColor)
   // This covers the space behind the grid cells, header and footer are drawn on top.
