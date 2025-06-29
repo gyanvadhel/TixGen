@@ -31,25 +31,66 @@
       transform: translateY(-3px);
       box-shadow: 0 8px 25px 0 rgba(76, 175, 80, 0.75);
     }
+
+    /* Toggle switch styling (optional) */
+    .form-switch-toggle {
+      width: 40px;
+      height: 20px;
+      background-color: #ccc;
+      appearance: none;
+      border-radius: 9999px;
+      position: relative;
+      outline: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .form-switch-toggle:checked {
+      background-color: #4CAF50;
+    }
+
+    .form-switch-toggle::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+    }
+
+    .form-switch-toggle:checked::before {
+      transform: translateX(20px);
+    }
   </style>
 </head>
-<body class="bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 min-h-screen flex flex-col items-center justify-center py-10 px-4 sm:px-6 lg:px-8">
+<body class="bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 dark:bg-gray-900 dark:text-white min-h-screen flex flex-col items-center justify-center py-10 px-4 sm:px-6 lg:px-8">
 
   <!-- Header -->
   <header class="w-full text-center py-8">
-    <h1 class="text-5xl font-extrabold text-gray-900 mb-4 tracking-tight">
+    <h1 class="text-5xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
       <span class="block">🎟️ Housie TixGen</span>
     </h1>
-    <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+    <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
       Your go-to solution for creating personalized Tambola (Housie) tickets. Perfect for family gatherings, events, and virtual game nights!
     </p>
+
+    <!-- Dark mode toggle -->
+    <div class="mt-4">
+      <label class="inline-flex items-center space-x-2 cursor-pointer">
+        <input type="checkbox" id="darkToggle" class="form-switch-toggle">
+        <span class="text-sm text-gray-600 dark:text-gray-300">Dark Theme</span>
+      </label>
+    </div>
   </header>
 
   <!-- Main Content -->
   <main class="flex-grow flex items-center justify-center w-full">
-    <div class="bg-white p-8 sm:p-12 rounded-3xl shadow-xl border border-gray-200 text-center max-w-xl w-full transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-      <h2 class="text-3xl font-bold text-gray-800 mb-6">Ready to Play?</h2>
-      <p class="text-lg text-gray-700 mb-8 leading-relaxed">
+    <div class="bg-white dark:bg-gray-800 p-8 sm:p-12 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 text-center max-w-xl w-full transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+      <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-6">Ready to Play?</h2>
+      <p class="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
         Effortlessly generate free, unique and customizable Housie tickets. Just a few clicks and you're set for endless fun!
       </p>
       <a href="/generator" class="btn-gradient px-8 py-3 rounded-full text-lg font-semibold shadow-md inline-block">
@@ -59,11 +100,11 @@
   </main>
 
   <!-- Footer -->
-  <footer class="w-full py-8 mt-10 bg-gray-800 text-white text-center">
+  <footer class="w-full py-8 mt-10 bg-gray-800 dark:bg-gray-900 text-white text-center">
     <div class="container mx-auto px-4">
 
-      <!-- Improved Social Icons -->
       <div class="flex justify-center gap-4 mb-4">
+        <!-- GitHub -->
         <a href="https://github.com/gyanvadhel" target="_blank" aria-label="GitHub" class="group">
           <div class="p-2 rounded-full bg-gray-700 hover:bg-gray-900 transition duration-300 shadow-md group-hover:scale-105 transform">
             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -84,6 +125,7 @@
           </div>
         </a>
 
+        <!-- LinkedIn -->
         <a href="https://www.linkedin.com/in/gyan-vadhel-483321290/" target="_blank" aria-label="LinkedIn" class="group">
           <div class="p-2 rounded-full bg-blue-600 hover:bg-blue-800 transition duration-300 shadow-md group-hover:scale-105 transform">
             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -92,6 +134,7 @@
           </div>
         </a>
 
+        <!-- Instagram -->
         <a href="https://instagram.com/gyan.fr" target="_blank" aria-label="Instagram" class="group">
           <div class="p-2 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 transition duration-300 shadow-md group-hover:scale-105 transform">
             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -100,6 +143,7 @@
           </div>
         </a>
 
+        <!-- Itch.io -->
         <a href="https://gyvn.itch.io" target="_blank" aria-label="Itch.io" class="group">
           <div class="p-2 rounded-full bg-red-600 hover:bg-red-700 transition duration-300 shadow-md group-hover:scale-105 transform">
             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -109,9 +153,22 @@
         </a>
       </div>
        
-      <p class="text-sm text-gray-500">Contact me at <a href="mailto:gyanvadhel@gmail.com" class="text-blue-400 hover:underline">gyanvadhel@gmail.com</a> for feedback ;)</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Contact me at <a href="mailto:gyanvadhel@gmail.com" class="text-blue-400 hover:underline">gyanvadhel@gmail.com</a> for feedback ;)</p>
     </div>
   </footer>
 
+  <!-- Dark Mode Script -->
+  <script>
+    const toggle = document.getElementById('darkToggle');
+    const isDark = localStorage.getItem('darkMode') === 'true';
+    if (isDark) document.documentElement.classList.add('dark');
+    toggle.checked = isDark;
+
+    toggle.addEventListener('change', () => {
+      const dark = toggle.checked;
+      document.documentElement.classList.toggle('dark', dark);
+      localStorage.setItem('darkMode', dark);
+    });
+  </script>
 </body>
 </html>
