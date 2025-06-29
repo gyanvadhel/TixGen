@@ -233,7 +233,6 @@ def generate():
             
             pdf.set_xy(x0, footer_y_start + footer_vertical_offset)
 
-            footer_text = host # Initialize with host name
             if phone: # Add phone number if it exists
                 footer_text += f" - {phone}" 
             if message: # Add message if it exists
