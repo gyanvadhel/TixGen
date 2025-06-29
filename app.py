@@ -15,85 +15,48 @@ col_ranges = [list(range(1, 10))] + [list(range(i, i + 10)) for i in range(10, 8
 def generate_ticket_structure_and_numbers():
     """
     Generates a single, valid Tambola ticket (3 rows x 9 columns)
-    with 5 numbers per row and at least 1 number per column.
-    This function also fills the numbers directly into the ticket,
-    without needing a 'perfect block' check against col_supply globally.
+    with 5 numbers per row and numbers filled according to rules.
+    This uses a hardcoded, highly deterministic construction for speed and reliability.
     """
-    # Max attempts for generating a single valid ticket structure. This should be very fast.
-    for _ in range(5000): 
-        ticket = [[[None] * 9 for _ in range(3)] for _ in range(3)] # Initialize 3x9 ticket grid
-        
-        # --- Step 1: Create the True/False mask for this single ticket ---
-        pos_mask = [[False] * 9 for _ in range(3)] 
-        
-        all_cols_indices = list(range(9))
-        random.shuffle(all_cols_indices)
-        
-        single_num_cols = all_cols_indices[:3] # Columns that will have 1 number in this ticket
-        double_num_cols = all_cols_indices[3:] # Columns that will have 2 numbers in this ticket
-        
-        row_current_fill = [0, 0, 0] # Track numbers placed in each row (max 5 per row)
-        positions_to_place_in_mask = [] # Store (row, col) where numbers should be placed in mask
+    # A single, pre-verified valid mask pattern for one Tambola ticket.
+    # This pattern ensures:
+    # - 5 numbers per row.
+    # - Each column has 1 or 2 numbers.
+    # - Total 15 numbers per ticket.
+    ticket_mask = [
+        [1, 0, 1, 1, 0, 1, 0, 1, 0], # Example row 1: 5 numbers
+        [0, 1, 0, 1, 1, 0, 1, 0, 1], # Example row 2: 5 numbers
+        [1, 0, 1, 0, 0, 1, 1, 1, 0]  # Example row 3: 5 numbers
+    ]
+    # Column sums for this specific mask: [2, 1, 2, 2, 1, 2, 2, 2, 1] - sums to 15 numbers
 
-        valid_structure_this_attempt = True
-        
-        # Assign 1 number for each of the 3 single_num_cols
-        initial_rows_for_singles = random.sample(range(3), 3) 
-        for i, col_idx in enumerate(single_num_cols):
-            r_idx = initial_rows_for_singles[i]
-            positions_to_place_in_mask.append((r_idx, col_idx))
-            row_current_fill[r_idx] += 1
+    current_ticket = [[[None] * 9 for _ in range(3)] for _ in range(3)] # Initialize 3x9 ticket grid with None
 
-        # Assign 2 numbers for each of the 6 double_num_cols
-        for col_idx in double_num_cols:
-            available_rows = [r for r in range(3) if row_current_fill[r] < 5]
-            
-            if len(available_rows) < 2:
-                valid_structure_this_attempt = False
-                break # Cannot place 2 numbers, this structure attempt failed
-            
-            r0, r1 = random.sample(available_rows, 2) 
+    # Step 2: Fill numbers into the ticket based on the fixed ticket_mask
+    for c_idx in range(9): # For each column (0 to 8)
+        # Get numbers for this column's range (e.g., 1-9, 10-19)
+        numbers_for_this_col_range = col_ranges[c_idx].copy()
+        random.shuffle(numbers_for_this_col_range) # Shuffle numbers within their range for randomness
 
-            positions_to_place_in_mask.append((r0, col_idx))
-            positions_to_place_in_mask.append((r1, col_idx))
-            row_current_fill[r0] += 1
-            row_current_fill[r1] += 1
-            
-        if not valid_structure_this_attempt:
-            continue # Restart outer loop for a new mask structure attempt
-
-        # If mask structure is valid, populate actual 'pos_mask' grid
-        for r, c in positions_to_place_in_mask:
-            pos_mask[r][c] = True
+        slots_in_this_col_count = 0
+        for r_idx in range(3):
+            if ticket_mask[r_idx][c_idx] == 1:
+                slots_in_this_col_count += 1
         
-        # Final validation for the generated mask structure: 15 numbers total, 5 per row, at least 1 per column
-        if not all(count == 5 for count in row_current_fill) or \
-           not all(any(pos_mask[r_check][c_check] for r_check in range(3)) for c_check in range(9)):
-            continue # Mask invalid, restart attempt
+        # Take exactly as many numbers as needed for this column based on the mask
+        numbers_to_assign = numbers_for_this_col_range[:slots_in_this_col_count]
         
-        # --- Step 2: Fill numbers into the validated mask for this ticket ---
-        for c_idx in range(9): # For each column
-            # Collect slots for numbers in this column for this ticket
-            slots_in_this_col = []
-            for r_idx in range(3):
-                if pos_mask[r_idx][c_idx]:
-                    slots_in_this_col.append(r_idx)
-            
-            if slots_in_this_col: # If this column has slots
-                numbers_for_this_col_range = col_ranges[c_idx].copy()
-                random.shuffle(numbers_for_this_col_range) # Shuffle numbers within their range
-
-                # Take as many numbers as there are slots in this column for this ticket
-                numbers_to_assign = numbers_for_this_col_range[:len(slots_in_this_col)]
-                
-                # Assign numbers to the slots
-                for i, r_idx in enumerate(slots_in_this_col):
-                    ticket[r_idx][c_idx] = numbers_to_assign[i]
-        
-        return ticket # Return the fully generated ticket with numbers
-            
-    # This theoretical error means the single ticket generation itself failed many times, highly unlikely
-    raise RuntimeError("Failed to generate a valid individual ticket after many attempts.")
+        assigned_count = 0
+        for r_idx in range(3):
+            if ticket_mask[r_idx][c_idx] == 1:
+                if assigned_count < len(numbers_to_assign): # Safety check
+                    current_ticket[r_idx][c_idx] = numbers_to_assign[assigned_count]
+                    assigned_count += 1
+                else:
+                    # This should theoretically not be hit with a correct fixed mask
+                    raise RuntimeError(f"Logic error: Not enough numbers generated for mask slots in column {c_idx}.")
+    
+    return current_ticket
 
 
 def hex_to_rgb(hex_color):
@@ -196,6 +159,31 @@ def generate():
         pdf.set_x(mx)
         pdf.multi_cell(W - 2 * mx, 6, line)
     
+    # --- Add Callable Numbers Page ---
+    pdf.add_page()
+    pdf.set_fill_color(*page_bg_color)
+    pdf.rect(0, 0, W, H, 'F')
+    pdf.set_text_color(*font_color)
+
+    pdf.set_font('helvetica', 'B', 20)
+    pdf.set_xy(mx, my)
+    pdf.cell(W - 2 * mx, 10, 'Callable Numbers (For Caller)', align='C')
+    pdf.ln(15)
+
+    all_numbers = list(range(1, 91))
+    random.shuffle(all_numbers)
+
+    pdf.set_font('helvetica', '', 14)
+    num_cols = 10
+    num_width = (W - 2 * mx) / num_cols
+    line_height = 8
+
+    pdf.set_xy(mx, my + 20)
+    for i, num in enumerate(all_numbers):
+        col = i % num_cols
+        row = i // num_cols
+        pdf.set_xy(mx + col * num_width, my + 20 + row * line_height)
+        pdf.cell(num_width, line_height, str(num), align='C', border=0)
 
     # --- Add Tickets Pages ---
     # Loop through tickets, placing 12 tickets per page
