@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 # Column ranges and expected number counts per column
 col_ranges = [list(range(1, 10))] + [list(range(i, i + 10)) for i in range(10, 80, 10)] + [list(range(80, 91))]
-col_supply = [len(r) for r in col_ranges]
+col_supply = [len(r) for r in col_ranges] # Expected total numbers per column across a block of 6 tickets
 
 def generate_ticket_structure():
     """
@@ -21,97 +21,101 @@ def generate_ticket_structure():
     while True: # Keep trying until a valid structure is generated
         pos = [[False] * 9 for _ in range(3)] # Initialize 3x9 grid
         
-        # A standard Tambola ticket has:
-        # - 3 columns with 1 number
-        # - 6 columns with 2 numbers
-        # This totals 3*1 + 6*2 = 15 numbers (5 per row)
+        # A standard Tambola ticket has 15 numbers:
+        # - 3 columns with 1 number (single-filled)
+        # - 6 columns with 2 numbers (double-filled)
         
-        # Randomly assign which columns will have 1 number and which will have 2
+        # Randomly assign which columns will have 1 number and which will have 2 for this single ticket
         all_cols_indices = list(range(9))
         random.shuffle(all_cols_indices)
         
-        # First 3 columns will have 1 number
-        single_num_cols = all_cols_indices[:3]
-        # Remaining 6 columns will have 2 numbers
-        double_num_cols = all_cols_indices[3:]
+        single_num_cols = all_cols_indices[:3] # Columns that will have 1 number
+        double_num_cols = all_cols_indices[3:] # Columns that will have 2 numbers
         
-        # Keep track of how many numbers are placed in each row
-        row_current_fill = [0, 0, 0] # Max 5 numbers per row
-        
-        # List of (row_idx, col_idx) pairs to fill
-        positions_to_place = []
+        row_current_fill = [0, 0, 0] # Track numbers placed in each row (max 5 per row)
+        positions_to_place = [] # Store (row, col) where numbers should be placed
 
         # Step 1: Place 1 number in each of the 'single_num_cols'
         # Distribute these across rows, ensuring rows don't get full prematurely
         single_col_row_choices = list(range(3)) # Rows 0, 1, 2
-        random.shuffle(single_col_row_choices) # Random order for assigning single numbers
+        random.shuffle(single_col_row_choices)
         
         for i, col_idx in enumerate(single_num_cols):
-            row_idx = single_col_row_choices[i] # Assign unique row for each of these 3 single numbers initially
+            row_idx = single_col_row_choices[i]
             positions_to_place.append((row_idx, col_idx))
             row_current_fill[row_idx] += 1
 
         # Step 2: Place 2 numbers in each of the 'double_num_cols'
         for col_idx in double_num_cols:
-            # Find rows that are not yet full (less than 5 numbers)
             available_rows = [r for r in range(3) if row_current_fill[r] < 5]
             
             if len(available_rows) < 2:
-                # This scenario should be rare with proper initial setup, but indicates failure
-                # Need to restart if we can't place 2 numbers in distinct rows
-                break # Break inner loop, outer while loop will retry
+                # If we can't place 2 numbers (e.g., only one row is available or none), restart structure generation
+                break # This 'break' will go to the outer 'while True'
             
-            # Select 2 distinct rows from available ones
-            chosen_rows_for_col = random.sample(available_rows, 2)
-            
-            for row_idx in chosen_rows_for_col:
-                positions_to_place.append((row_idx, col_idx))
-                row_current_fill[row_idx] += 1
+            random.shuffle(available_rows) # Shuffle the available rows
+            r0, r1 = available_rows[0], available_rows[1] # Pick the first two distinct rows
+
+            positions_to_place.append((r0, col_idx))
+            positions_to_place.append((r1, col_idx))
+            row_current_fill[r0] += 1
+            row_current_fill[r1] += 1
         
-        else: # This 'else' block executes if the inner 'for col_idx' loop completed without a 'break'
-            # All columns processed, now populate the actual 'pos' grid
+        else: # This 'else' executes if the inner 'for col_idx' loop completed without a 'break'
+            # All columns processed, now populate the actual 'pos' grid from positions_to_place
             for r, c in positions_to_place:
                 pos[r][c] = True
             
             # Final validation: check if all rows have exactly 5 numbers
-            # And all columns have at least one number (implicitly handled by col_counts_config)
-            if all(count == 5 for count in row_current_fill) and \
-               all(any(pos[r_check][c_check] for r_check in range(3)) for c_check in range(9)):
-                return pos
+            # (Column validity is implicitly handled by the construction logic)
+            if all(count == 5 for count in row_current_fill):
+                # Also ensure every column has at least one number in this single ticket
+                if all(any(pos[r_check][c_check] for r_check in range(3)) for c_check in range(9)):
+                    return pos # Return the valid structure
         
         # If any break occurred or final validation failed, the 'while True' loop continues for a new attempt
 
-# This function is significantly changed to directly build the block of 6 tickets
-def generate_block_of_6_tickets():
+def generate_perfect_block_of_6():
     """
-    Generates a block of 6 Tambola tickets ensuring all numbers from 1-90 are used exactly once.
-    This eliminates the need for random attempts to match col_supply, making it much faster.
+    Generates a block of 6 Tambola tickets that collectively
+    use numbers from 1-90 exactly once, matching col_supply.
+    This function will retry generating blocks until a suitable one is found.
     """
-    # 1. Generate 6 valid ticket structures (True/False grids)
-    grids = [generate_ticket_structure() for _ in range(6)]
-    
-    # Initialize the actual tickets with None
-    tickets = [[[None]*9 for _ in range(3)] for _ in range(6)]
-
-    # 2. Fill numbers for each column across all 6 tickets
-    for c in range(9): # Iterate through each of the 9 columns (number ranges)
-        nums_for_this_column = col_ranges[c].copy() # Get numbers for this column's range (e.g., 1-9, 10-19)
-        random.shuffle(nums_for_this_column) # Shuffle them for randomness in placement
+    # Reduced max_attempts for better performance on free tiers.
+    # A successful run for a perfect block can still take many iterations,
+    # but the individual ticket structure generation is fast.
+    max_attempts = 100000 # Increased from 10**5 for a better chance on larger page counts
+    for _ in range(max_attempts):
+        grids = [generate_ticket_structure() for _ in range(6)]
         
-        current_num_idx = 0
-        # Iterate through the 6 tickets and their 3 rows to place numbers
-        for t in range(6): # For each ticket
-            for r in range(3): # For each row
-                if grids[t][r][c]: # If this cell in the structure is marked True (should contain a number)
-                    if current_num_idx < len(nums_for_this_column):
-                        tickets[t][r][c] = nums_for_this_column[current_num_idx]
-                        current_num_idx += 1
-                    else:
-                        # This should ideally not happen if col_supply is consistent with total cells in grids
-                        # But it's a safeguard against potential logic errors
-                        raise RuntimeError(f"Not enough numbers for column {c} or too many cells marked True.")
+        # Calculate the actual demand (sum of True cells) for each column across all 6 tickets
+        demand = [sum(grids[t][r][c] for t in range(6) for r in range(3)) for c in range(9)]
+        
+        # Check if the collective column counts match the required supply
+        if demand == col_supply:
+            tickets = [[[None]*9 for _ in range(3)] for _ in range(6)]
+            
+            # Now, fill the numbers into the generated structures
+            for c in range(9): # For each column (number range)
+                nums = col_ranges[c].copy() # Get numbers for this column's range
+                random.shuffle(nums) # Shuffle them for random placement
+                
+                current_num_idx = 0
+                # Iterate through the 6 tickets and their 3 rows to place numbers
+                for t in range(6): # For each ticket in the block
+                    for r in range(3): # For each row in the ticket
+                        if grids[t][r][c]: # If this cell in the structure is marked True
+                            if current_num_idx < len(nums): # Safeguard against index out of bounds
+                                tickets[t][r][c] = nums[current_num_idx]
+                                current_num_idx += 1
+                            else:
+                                # This scenario should ideally not be hit if demand == col_supply,
+                                # but it's a critical safeguard.
+                                raise RuntimeError(f"Internal logic error: Mismatch in number placement for column {c}.")
+            return tickets # Return the successfully generated block
     
-    return tickets
+    # If after max_attempts, no perfect block is found, raise an error
+    raise RuntimeError(f"Could not generate a perfect block of 6 tickets after {max_attempts} attempts. Please try again or reduce the number of pages.")
 
 
 def hex_to_rgb(hex_color):
@@ -147,13 +151,17 @@ def generate():
     font_color = hex_to_rgb(request.form.get("font_color", "#FFFFFF"))
 
     tickets = []
-    # Calculate how many blocks of 6 tickets are needed
-    blocks_needed = math.ceil(pages * 12 / 6)
-    
-    for _ in range(blocks_needed):
-        tickets.extend(generate_block_of_6_tickets()) # Use the new, efficient function
+    blocks_needed = math.ceil(pages * 12 / 6) # Each block has 6 tickets
 
-    # Set up PDF
+    try:
+        for _ in range(blocks_needed):
+            # Call the function that generates a perfect block of 6 tickets
+            tickets.extend(generate_perfect_block_of_6())
+    except RuntimeError as e:
+        # Catch the error from ticket generation and display a friendly message
+        return render_template("error.html", message=str(e)), 500
+
+
     pdf = FPDF('P', 'mm', 'A4')
     pdf.set_auto_page_break(False)
 
@@ -161,7 +169,7 @@ def generate():
     mx, my = 10, 10
     gx, gy = 4, 7
     cp = 2
-    per = 12 # Tickets per page
+    per = 12
     rows = 6
     aw = W - 2 * mx - (cp - 1) * gx
     tw = aw / cp
@@ -170,7 +178,7 @@ def generate():
     ch = 9
     cw = tw / 9
     gh = ch * 3
-    th = hh + gh + fh # Exact total ticket height
+    th = hh + gh + fh
 
     # --- Add Instructions Page ---
     pdf.add_page()
