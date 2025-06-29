@@ -81,6 +81,17 @@ function updatePreview() {
 document.addEventListener("DOMContentLoaded", () => {
   createPreviewGrid();
   updatePreview(); // Initial update
+  // DARK MODE TOGGLE
+  const darkToggle = document.getElementById("darkModeToggle");
+  const prefersDark = localStorage.getItem("darkMode") === "true";
+  document.body.classList.toggle("dark", prefersDark);
+  darkToggle.checked = prefersDark;
+
+  darkToggle.addEventListener("change", () => {
+    const isDark = darkToggle.checked;
+    document.body.classList.toggle("dark", isDark);
+    localStorage.setItem("darkMode", isDark);
+  });
 
   // Add event listeners to all relevant input fields for continuous updates
   document.querySelectorAll('input[type="color"], input[type="text"], input[type="tel"], input[type="number"]').forEach(input => {
