@@ -151,7 +151,7 @@ VERIFIED_PREDEFINED_BLOCK = [
     # Ticket 6
     [[None, 19, None, None, None, None, None, None, None], # Corrected from previous example to be valid
      [None, None, 28, 39, None, None, None, 80, None], # This entire block is now filled based on standard rules
-     [9, None, None, None, None, None, None, None, 90]]
+     [9, None, None, None, None, None, None, None, 90]]]
     # NOTE: The above VERIFIED_PREDEFINED_BLOCK is a simple structure that fits the column requirements.
     # To truly be a "standard" Tambola block, each ticket must contain 15 numbers (5 per row) and
     # the exact number distribution per column.
