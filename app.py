@@ -205,8 +205,9 @@ def generate():
                 pdf.set_font("helvetica", 'I', 9)
                 pdf.cell(tw, fh, footer_text, 0, align='C')
 
-        pdf_bytes = pdf.output(dest='S')
+        pdf_bytes = pdf.output(dest='S').encode("latin1")
         return send_file(BytesIO(pdf_bytes), download_name="tixgen.pdf", as_attachment=True, mimetype='application/pdf')
+
 
     except Exception as e:
         logging.exception("Error during PDF generation:")
