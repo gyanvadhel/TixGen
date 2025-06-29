@@ -3,6 +3,7 @@ from io import BytesIO
 import random
 import math
 from fpdf import FPDF
+# Removed qrcode and PIL imports as they are no longer needed
 
 app = Flask(__name__)
 
@@ -158,6 +159,7 @@ def generate():
         pdf.set_x(mx)
         pdf.multi_cell(W - 2 * mx, 6, line)
     
+    # QR code section was removed here.
 
     # --- Add Tickets Pages ---
     for p in range(math.ceil(len(tickets) / per)):
