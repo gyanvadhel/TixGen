@@ -216,32 +216,6 @@ def generate():
     for line in rules_text:
         pdf.set_x(mx)
         pdf.multi_cell(W - 2 * mx, 6, line)
-    
-    # --- Add Callable Numbers Page ---
-    pdf.add_page()
-    pdf.set_fill_color(*page_bg_color)
-    pdf.rect(0, 0, W, H, 'F')
-    pdf.set_text_color(*font_color)
-
-    pdf.set_font('helvetica', 'B', 20)
-    pdf.set_xy(mx, my)
-    pdf.cell(W - 2 * mx, 10, 'Callable Numbers (For Caller)', align='C')
-    pdf.ln(15)
-
-    all_numbers = list(range(1, 91))
-    random.shuffle(all_numbers)
-
-    pdf.set_font('helvetica', '', 14)
-    num_cols = 10
-    num_width = (W - 2 * mx) / num_cols
-    line_height = 8
-
-    pdf.set_xy(mx, my + 20)
-    for i, num in enumerate(all_numbers):
-        col = i % num_cols
-        row = i // num_cols
-        pdf.set_xy(mx + col * num_width, my + 20 + row * line_height)
-        pdf.cell(num_width, line_height, str(num), align='C', border=0)
 
     # --- Add Tickets Pages ---
     for p in range(math.ceil(len(tickets) / per)):
@@ -294,7 +268,7 @@ def generate():
                     num = data[r][c]
                     if num:
                         sw = pdf.get_string_width(str(num))
-                        pdf.set_xy(cx + (cw - sw) / 2, cy + (ch - pdf.font_size) / 2)
+                        pdf.set_xy(cx + (cw - sw) / 2.8, cy + (ch - pdf.font_size) / 2)
                         pdf.cell(sw, pdf.font_size, str(num), border=0)
 
             # Footer
