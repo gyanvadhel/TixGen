@@ -33,28 +33,29 @@ def generate_ticket_structure_and_numbers():
     # Fill numbers into the ticket based on the fixed ticket_mask
     for c_idx in range(9): # For each column (0 to 8)
         numbers_for_this_col_range = col_ranges[c_idx].copy()
-        random.shuffle(numbers_for_this_col_range) # Shuffle numbers within their range
-
+        
         slots_in_this_col_for_ticket = []
         for r_idx in range(3):
             if ticket_mask[r_idx][c_idx] == 1:
                 slots_in_this_col_for_ticket.append(r_idx)
         
         # Take exactly as many numbers as there are slots in this column for this ticket
-        # The slice will safely handle cases where numbers_for_this_col_range might be shorter
-        # (though for Tambola, col_ranges are always large enough for 1 or 2 slots).
-        numbers_to_assign_to_slots = numbers_for_this_col_range[:len(slots_in_this_col_for_ticket)]
+        # And crucially, sort them to ensure ascending order within the column.
+        num_to_sample = len(slots_in_this_col_for_ticket)
+        # Ensure we don't try to sample more numbers than are available in the range
+        if num_to_sample > len(numbers_for_this_col_range):
+            raise RuntimeError(f"Not enough numbers in range for column {c_idx}. Rule violation or invalid mask.")
+
+        # FIX: Sample and then sort the numbers for this column
+        numbers_to_assign = sorted(random.sample(numbers_for_this_col_range, num_to_sample))
         
         assigned_count = 0
-        for r_idx in slots_in_this_col_for_ticket: # Iterate only over rows with slots
-            # This check ensures we don't try to assign more numbers than we have
-            if assigned_count < len(numbers_to_assign_to_slots): 
-                current_ticket[r_idx][c_idx] = numbers_to_assign_to_slots[assigned_count]
-                assigned_count += 1
-            else:
-                # This error indicates a problem with the fixed mask or col_ranges setup
-                # if it were to occur (shouldn't with standard Tambola masks and rules).
-                raise RuntimeError(f"Logic error in number assignment for column {c_idx}. Too many slots for available numbers.")
+        # Iterate over the row indices where slots exist for this column.
+        # Since slots_in_this_col_for_ticket contains row indices in ascending order (0, 1, 2),
+        # assigning numbers_to_assign[assigned_count] will place them in ascending order vertically.
+        for r_idx in slots_in_this_col_for_ticket:
+            current_ticket[r_idx][c_idx] = numbers_to_assign[assigned_count]
+            assigned_count += 1
     
     # Final check: ensure the ticket has exactly 15 numbers (total from the mask)
     total_numbers_in_ticket = sum(1 for row in current_ticket for cell in row if cell is not None)
