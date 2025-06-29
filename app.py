@@ -3,7 +3,6 @@ from io import BytesIO
 import random
 import math
 from fpdf import FPDF
-# Removed qrcode and PIL imports as they are no longer needed
 
 app = Flask(__name__)
 
@@ -236,7 +235,7 @@ def generate():
             
             pdf.set_xy(x0, footer_y_start + footer_vertical_offset)
 
-            footer_text = host # As per latest image, only host in footer
+            footer_text = host
 
             pdf.cell(tw, fh, footer_text, align='C')
 
