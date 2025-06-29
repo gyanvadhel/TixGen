@@ -251,7 +251,7 @@ def generate():
                     num = data[r][c]
                     if num:
                         sw = pdf.get_string_width(str(num))
-                        pdf.set_xy(cx + (cw - sw) / 2, cy + (ch - pdf.font_size) / 2)
+                        pdf.set_xy(cx + (cw - sw) / 2.8, cy + (ch - pdf.font_size) / 2)
                         pdf.cell(sw, pdf.font_size, str(num), border=0)
 
             # Footer
