@@ -3,8 +3,6 @@ from io import BytesIO
 import random
 import math
 from fpdf import FPDF
-import qrcode # Import the qrcode library
-from PIL import Image # Pillow is needed by qrcode to generate image objects
 
 app = Flask(__name__)
 
