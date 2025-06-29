@@ -121,14 +121,10 @@ def generate():
     message = request.form.get('custom_message', '').strip()
     hide_ticket_number = 'hide_ticket_number' in request.form
 
-    # --- FIX STARTS HERE ---
-    # Sanitize text inputs to prevent encoding errors with FPDF's standard fonts.
-    # This replaces any non-compatible characters (like emojis or special symbols)
-    # with a placeholder '?' instead of crashing the application.
+    # Sanitize text to handle special characters (this is still good practice)
     safe_host = host.encode('latin-1', 'replace').decode('latin-1')
     safe_phone = phone.encode('latin-1', 'replace').decode('latin-1')
     safe_message = message.encode('latin-1', 'replace').decode('latin-1')
-    # --- FIX ENDS HERE ---
 
     try:
         pages = int(request.form.get('pages', 1))
@@ -166,6 +162,8 @@ def generate():
     gh = ch * 3
     th = hh + gh + fh
 
+    # --- Add Instructions Page ---
+    # This part is unchanged and fine
     pdf.add_page()
     pdf.set_fill_color(*page_bg_color)
     pdf.rect(0, 0, W, H, 'F')
@@ -177,22 +175,17 @@ def generate():
     pdf.set_font('helvetica', '', 12)
     rules_text = [
         "Tambola, also known as Housie, is a popular game of chance.",
-        "",
-        "Objective: To be the first to mark off numbers on your ticket in specific patterns.",
-        "",
-        "Gameplay:",
-        "1.  As the Caller announces a number, if it's on your ticket, mark it off.",
+        "", "Objective: To be the first to mark off numbers on your ticket in specific patterns.",
+        "", "Gameplay:", "1.  As the Caller announces a number, if it's on your ticket, mark it off.",
         "2.  Announce your claim for a winning pattern immediately after marking the last number for that pattern.",
-        "",
-        "Common Patterns:",
-        "- Early Five: First 5 numbers marked on a ticket.",
-        "- Top Line, Middle Line, Bottom Line",
-        "- Full House: All 15 numbers marked on your ticket."
+        "", "Common Patterns:", "- Early Five: First 5 numbers marked on a ticket.",
+        "- Top Line, Middle Line, Bottom Line", "- Full House: All 15 numbers marked on your ticket."
     ]
     for line in rules_text:
         pdf.set_x(mx)
         pdf.multi_cell(W - 2 * mx, 6, line)
 
+    # --- Add Tickets Pages ---
     for p in range(pages):
         pdf.add_page()
         pdf.set_fill_color(*page_bg_color)
@@ -200,8 +193,7 @@ def generate():
 
         for i in range(per_page):
             idx = p * per_page + i
-            if idx >= len(all_tickets):
-                break
+            if idx >= len(all_tickets): break
             
             data = all_tickets[idx]
             colp = 0 if i < rows_on_page else 1
@@ -212,51 +204,53 @@ def generate():
             pdf.set_fill_color(*ticket_bg_fill)
             pdf.rect(x0, y0, tw, th, style='F')
 
-            # Header
+            # --- HEADER SECTION WITH FIX ---
             pdf.set_fill_color(*header_fill)
             pdf.rect(x0, y0, tw, hh, style='F')
             pdf.set_text_color(*font_color)
             pdf.set_font('helvetica', 'B', 10)
             
-            # Use the safe version of the host name
             header_text = safe_host
             if not hide_ticket_number:
                 header_text += f" | Ticket {idx + 1}"
-            
+
+            # NEW: Truncate header text if it's too wide for the ticket
+            padding = 4  # Give 4mm of padding
+            while pdf.get_string_width(header_text) > (tw - padding):
+                header_text = header_text[:-1]
+
             pdf.set_xy(x0, y0)
             pdf.cell(tw, hh, header_text, border=0, align='C')
 
-            # Grid
+            # --- GRID SECTION (Unchanged) ---
             pdf.set_font('helvetica', 'B', 16)
             pdf.set_draw_color(0, 0, 0)
-
             for r_cell in range(3):
                 for c_cell in range(9):
-                    cx = x0 + c_cell * cw
-                    cy = y0 + hh + r_cell * ch
-                    
+                    cx, cy = x0 + c_cell * cw, y0 + hh + r_cell * ch
                     pdf.set_fill_color(*grid_color)
                     pdf.rect(cx, cy, cw, ch, style='FD')
-
                     num = data[r_cell][c_cell]
                     if num:
                         pdf.set_text_color(*font_color)
                         sw = pdf.get_string_width(str(num))
-                        pdf.set_xy(cx + (cw - sw) / 2.8, cy + (ch - pdf.font_size) / 2 + 1)
+                        pdf.set_xy(cx + (cw - sw) / 2, cy + (ch - pdf.font_size) / 2 + 1)
                         pdf.cell(sw, pdf.font_size, str(num), border=0)
 
-            # Footer
+            # --- FOOTER SECTION WITH FIX ---
             footer_y_start = y0 + hh + gh
             pdf.set_fill_color(*footer_fill)
             pdf.rect(x0, footer_y_start, tw, fh, style='F')
-            
             pdf.set_text_color(*font_color)
             pdf.set_font('helvetica', 'I', 9)
 
-            # Use the safe versions of the text for the footer
             footer_text = safe_host
             if safe_phone: footer_text += f" • {safe_phone}"
             if safe_message: footer_text += f" • {safe_message}"
+
+            # NEW: Truncate footer text if it's too wide for the ticket
+            while pdf.get_string_width(footer_text) > (tw - padding):
+                footer_text = footer_text[:-1]
 
             pdf.set_xy(x0, footer_y_start)
             pdf.cell(tw, fh, footer_text, align='C')
@@ -264,7 +258,7 @@ def generate():
     output_bytes = pdf.output(dest='S').encode('latin1')
     pdf_stream = BytesIO(output_bytes)
     pdf_stream.seek(0)
-    return send_file(pdf_stream, download_name="tambola_tickets_book.pdf", as_attachment=True, mimetype='application/pdf')
+    return send_file(pdf_stream, download_name="tixgen.pdf", as_attachment=True, mimetype='application/pdf')
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0')
