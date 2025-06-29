@@ -35,19 +35,15 @@ def generate_perfect_block_of_6():
         row_counts = [[sum(1 for cell in row if cell) for row in t] for t in tickets]
         over = [(t, r) for t in range(6) for r in range(3) if row_counts[t][r] > 5]
         under = [(t, r) for t in range(6) for r in range(3) if row_counts[t][r] < 5]
-        if not over and not under:
+        if not over or not under:
             break
-        if over and under:
-            from_t, from_r = random.choice(over)
-            to_t, to_r = random.choice(under)
-            for c in range(9):
-                if tickets[from_t][from_r][c] and not tickets[to_t][to_r][c]:
-                    tickets[to_t][to_r][c] = tickets[from_t][from_r][c]
-                    tickets[from_t][from_r][c] = None
-                    break
-        else:
-            break  # fallback to prevent infinite loop or crash
-
+        from_t, from_r = random.choice(over)
+        to_t, to_r = random.choice(under)
+        for c in range(9):
+            if tickets[from_t][from_r][c] and not tickets[to_t][to_r][c]:
+                tickets[to_t][to_r][c] = tickets[from_t][from_r][c]
+                tickets[from_t][from_r][c] = None
+                break
 
     for ticket in tickets:
         for c in range(9):
@@ -112,32 +108,43 @@ def generate():
         gh = ch * 3
         th = hh + gh + fh
 
-        # Instructions Page
+        # --- Instructions Page (white background, black text, bigger font) ---
         pdf.add_page()
-        pdf.set_fill_color(*page_bg_color)
+        pdf.set_fill_color(255, 255, 255)
         pdf.rect(0, 0, W, H, 'F')
-        pdf.set_text_color(*font_color)
-        pdf.set_font("helvetica", 'B', 20)
-        pdf.set_xy(mx, my)
-        pdf.cell(W - 2 * mx, 10, 'How to Play Tambola (Housie)', align='C')
-        pdf.ln(15)
-        pdf.set_font("helvetica", '', 12)
-        rules = [
-            "Tambola (Housie) is a game of chance.",
-            "Objective: Mark off numbers to form specific winning patterns.",
-            "Gameplay:",
-            "1. Listen to the caller. If a called number is on your ticket, mark it.",
-            "2. When you complete a winning pattern, announce it immediately.",
-            "Common Patterns:",
-            "- Early Five: First 5 numbers marked.",
-            "- Top/Middle/Bottom Line.",
-            "- Full House: All 15 numbers on your ticket."
-        ]
-        for line in rules:
-            pdf.set_x(mx)
-            pdf.multi_cell(W - 2 * mx, 6, line)
+        pdf.set_text_color(0, 0, 0)
 
-        # Ticket Pages
+        pdf.set_font("helvetica", 'B', 22)
+        pdf.set_xy(mx, my)
+        pdf.cell(W - 2 * mx, 12, 'How to Play Tambola (Housie)', align='C')
+        pdf.ln(18)
+
+        pdf.set_font("helvetica", '', 14)
+        instructions = [
+            "Tambola (also called Housie) is a game of luck and numbers.",
+            "",
+            "Objective:",
+            "Mark off numbers on your ticket to complete winning patterns.",
+            "",
+            "How to Play:",
+            "1. A number will be called out (between 1 to 90).",
+            "2. If it appears on your ticket, mark it.",
+            "3. Be the first to complete and claim a winning pattern.",
+            "",
+            "Common Winning Patterns:",
+            "- Early Five: First 5 numbers marked on a ticket.",
+            "- Top Line: All 5 numbers in the top row.",
+            "- Middle Line: All 5 numbers in the middle row.",
+            "- Bottom Line: All 5 numbers in the bottom row.",
+            "- Full House: All 15 numbers on your ticket.",
+            "",
+            "Note: Call out your win immediately. Late claims are invalid!"
+        ]
+        for line in instructions:
+            pdf.set_x(mx)
+            pdf.multi_cell(W - 2 * mx, 8, line)
+
+        # --- Ticket Pages ---
         for p in range(pages):
             pdf.add_page()
             pdf.set_fill_color(*page_bg_color)
@@ -181,11 +188,11 @@ def generate():
                         if num:
                             txt = str(num)
                             sw = pdf.get_string_width(txt)
-                            pdf.set_xy(cx + (cw - sw) / 2.7, cy + (ch - pdf.font_size) / 2 + 1)
+                            pdf.set_xy(cx + (cw - sw) / 2.8, cy + (ch - pdf.font_size) / 2 + 1)
                             pdf.cell(sw, pdf.font_size, txt, 0)
 
                 # Footer
-                footer_parts = []
+                footer_parts = [host]
                 if phone: footer_parts.append(phone)
                 if message: footer_parts.append(message)
                 footer_text = " | ".join(footer_parts)
@@ -195,11 +202,11 @@ def generate():
                 pdf.set_fill_color(*footer_fill)
                 pdf.rect(x0, footer_y, tw, fh, 'F')
                 pdf.set_xy(x0, footer_y)
-                pdf.set_font("helvetica", 'B', 11)
+                pdf.set_font("helvetica", 'I', 9)
                 pdf.cell(tw, fh, footer_text, 0, align='C')
 
-        output = pdf.output(dest='S') # only safe for ASCII/latin1
-        return send_file(BytesIO(output), download_name="tixgen.pdf", as_attachment=True, mimetype='application/pdf')
+        pdf_bytes = pdf.output(dest='S')
+        return send_file(BytesIO(pdf_bytes), download_name="tixgen.pdf", as_attachment=True, mimetype='application/pdf')
 
     except Exception as e:
         logging.exception("Error during PDF generation:")
