@@ -36,6 +36,19 @@ function updatePreview() {
   const footer = document.getElementById("preview-footer");
   footer.style.backgroundColor = headerColor; // Footer background is header color
   footer.style.color = fontColor; // Use selected font color
+
+    // DARK MODE TOGGLE
+  const darkToggle = document.getElementById("darkModeToggle");
+  const prefersDark = localStorage.getItem("darkMode") === "true";
+  document.body.classList.toggle("dark", prefersDark);
+  darkToggle.checked = prefersDark;
+
+  darkToggle.addEventListener("change", () => {
+    const isDark = darkToggle.checked;
+    document.body.classList.toggle("dark", isDark);
+    localStorage.setItem("darkMode", isDark);
+  });
+
   
   // Construct footer text: only phone and message
   let footerText = "";
