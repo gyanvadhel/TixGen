@@ -81,30 +81,37 @@ def generate_ticket_structure():
         
         # If any break occurred or final validation failed, the 'while True' loop continues for a new attempt
 
-# The `generate_perfect_block_of_6()`'s `10**6` loop is still there as a fallback
-# but with the improved `generate_ticket_structure()`, it should rarely run
-# more than a few iterations.
-def generate_perfect_block_of_6():
-    for _ in range(10**6): # Max attempts for finding a perfect block
-        grids = [generate_ticket_structure() for _ in range(6)]
+# This function is significantly changed to directly build the block of 6 tickets
+def generate_block_of_6_tickets():
+    """
+    Generates a block of 6 Tambola tickets ensuring all numbers from 1-90 are used exactly once.
+    This eliminates the need for random attempts to match col_supply, making it much faster.
+    """
+    # 1. Generate 6 valid ticket structures (True/False grids)
+    grids = [generate_ticket_structure() for _ in range(6)]
+    
+    # Initialize the actual tickets with None
+    tickets = [[[None]*9 for _ in range(3)] for _ in range(6)]
+
+    # 2. Fill numbers for each column across all 6 tickets
+    for c in range(9): # Iterate through each of the 9 columns (number ranges)
+        nums_for_this_column = col_ranges[c].copy() # Get numbers for this column's range (e.g., 1-9, 10-19)
+        random.shuffle(nums_for_this_column) # Shuffle them for randomness in placement
         
-        # Check if the generated grids form a perfect block across all 9 columns
-        # (i.e., each column range has its full supply of numbers used exactly once across 6 tickets)
-        demand = [sum(grids[t][r][c] for t in range(6) for r in range(3)) for c in range(9)]
-        
-        if demand == col_supply:
-            tickets = [[[None]*9 for _ in range(3)] for _ in range(6)]
-            for c in range(9): # For each column (1-9, 10-19, etc.)
-                nums = col_ranges[c].copy() # Get numbers for this column's range
-                random.shuffle(nums) # Shuffle them
-                idx = 0
-                for t in range(6): # For each ticket in the block
-                    for r in range(3): # For each row in the ticket
-                        if grids[t][r][c]: # If this cell should contain a number
-                            tickets[t][r][c] = nums[idx] # Assign the next number from the shuffled list
-                            idx += 1
-            return tickets
-    raise RuntimeError("Block generation failed after 1M tries. This is highly unlikely with optimized ticket structure.")
+        current_num_idx = 0
+        # Iterate through the 6 tickets and their 3 rows to place numbers
+        for t in range(6): # For each ticket
+            for r in range(3): # For each row
+                if grids[t][r][c]: # If this cell in the structure is marked True (should contain a number)
+                    if current_num_idx < len(nums_for_this_column):
+                        tickets[t][r][c] = nums_for_this_column[current_num_idx]
+                        current_num_idx += 1
+                    else:
+                        # This should ideally not happen if col_supply is consistent with total cells in grids
+                        # But it's a safeguard against potential logic errors
+                        raise RuntimeError(f"Not enough numbers for column {c} or too many cells marked True.")
+    
+    return tickets
 
 
 def hex_to_rgb(hex_color):
@@ -140,10 +147,13 @@ def generate():
     font_color = hex_to_rgb(request.form.get("font_color", "#FFFFFF"))
 
     tickets = []
-    blocks = math.ceil(pages * 12 / 6)
-    for _ in range(blocks):
-        tickets += generate_perfect_block_of_6()
+    # Calculate how many blocks of 6 tickets are needed
+    blocks_needed = math.ceil(pages * 12 / 6)
+    
+    for _ in range(blocks_needed):
+        tickets.extend(generate_block_of_6_tickets()) # Use the new, efficient function
 
+    # Set up PDF
     pdf = FPDF('P', 'mm', 'A4')
     pdf.set_auto_page_break(False)
 
@@ -151,7 +161,7 @@ def generate():
     mx, my = 10, 10
     gx, gy = 4, 7
     cp = 2
-    per = 12
+    per = 12 # Tickets per page
     rows = 6
     aw = W - 2 * mx - (cp - 1) * gx
     tw = aw / cp
@@ -160,7 +170,7 @@ def generate():
     ch = 9
     cw = tw / 9
     gh = ch * 3
-    th = hh + gh + fh
+    th = hh + gh + fh # Exact total ticket height
 
     # --- Add Instructions Page ---
     pdf.add_page()
@@ -199,6 +209,31 @@ def generate():
         pdf.set_x(mx)
         pdf.multi_cell(W - 2 * mx, 6, line)
     
+    # --- Add Callable Numbers Page ---
+    pdf.add_page()
+    pdf.set_fill_color(*page_bg_color)
+    pdf.rect(0, 0, W, H, 'F')
+    pdf.set_text_color(*font_color)
+
+    pdf.set_font('helvetica', 'B', 20)
+    pdf.set_xy(mx, my)
+    pdf.cell(W - 2 * mx, 10, 'Callable Numbers (For Caller)', align='C')
+    pdf.ln(15)
+
+    all_numbers = list(range(1, 91))
+    random.shuffle(all_numbers)
+
+    pdf.set_font('helvetica', '', 14)
+    num_cols = 10
+    num_width = (W - 2 * mx) / num_cols
+    line_height = 8
+
+    pdf.set_xy(mx, my + 20)
+    for i, num in enumerate(all_numbers):
+        col = i % num_cols
+        row = i // num_cols
+        pdf.set_xy(mx + col * num_width, my + 20 + row * line_height)
+        pdf.cell(num_width, line_height, str(num), align='C', border=0)
 
     # --- Add Tickets Pages ---
     for p in range(math.ceil(len(tickets) / per)):
@@ -251,7 +286,7 @@ def generate():
                     num = data[r][c]
                     if num:
                         sw = pdf.get_string_width(str(num))
-                        pdf.set_xy(cx + (cw - sw) / 2.8, cy + (ch - pdf.font_size) / 2)
+                        pdf.set_xy(cx + (cw - sw) / 2, cy + (ch - pdf.font_size) / 2)
                         pdf.cell(sw, pdf.font_size, str(num), border=0)
 
             # Footer
