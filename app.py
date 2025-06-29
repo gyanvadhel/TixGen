@@ -121,6 +121,15 @@ def generate():
     message = request.form.get('custom_message', '').strip()
     hide_ticket_number = 'hide_ticket_number' in request.form
 
+    # --- FIX STARTS HERE ---
+    # Sanitize text inputs to prevent encoding errors with FPDF's standard fonts.
+    # This replaces any non-compatible characters (like emojis or special symbols)
+    # with a placeholder '?' instead of crashing the application.
+    safe_host = host.encode('latin-1', 'replace').decode('latin-1')
+    safe_phone = phone.encode('latin-1', 'replace').decode('latin-1')
+    safe_message = message.encode('latin-1', 'replace').decode('latin-1')
+    # --- FIX ENDS HERE ---
+
     try:
         pages = int(request.form.get('pages', 1))
     except ValueError:
@@ -132,11 +141,9 @@ def generate():
     grid_color = hex_to_rgb(request.form.get("grid_color", "#8B4513"))
     font_color = hex_to_rgb(request.form.get("font_color", "#FFFFFF"))
     footer_fill = header_fill
-    ticket_bg_fill = header_fill # Keeping this consistent as per original design
+    ticket_bg_fill = header_fill
 
-    # --- Generate tickets using the correct block-based method ---
     all_tickets = []
-    # Since each page has 12 tickets, we need `pages * 2` blocks of 6.
     num_blocks_needed = pages * 2
     for _ in range(num_blocks_needed):
         all_tickets.extend(generate_perfect_block_of_6())
@@ -159,20 +166,16 @@ def generate():
     gh = ch * 3
     th = hh + gh + fh
 
-    # --- Add Instructions Page ---
     pdf.add_page()
     pdf.set_fill_color(*page_bg_color)
     pdf.rect(0, 0, W, H, 'F')
     pdf.set_text_color(*font_color)
-
     pdf.set_font('helvetica', 'B', 20)
     pdf.set_xy(mx, my)
     pdf.cell(W - 2 * mx, 10, 'How to Play Tambola (Housie)', align='C')
-
     pdf.ln(15)
     pdf.set_font('helvetica', '', 12)
     rules_text = [
-        # ... (rules text remains the same, omitted for brevity) ...
         "Tambola, also known as Housie, is a popular game of chance.",
         "",
         "Objective: To be the first to mark off numbers on your ticket in specific patterns.",
@@ -190,7 +193,6 @@ def generate():
         pdf.set_x(mx)
         pdf.multi_cell(W - 2 * mx, 6, line)
 
-    # --- Add Tickets Pages ---
     for p in range(pages):
         pdf.add_page()
         pdf.set_fill_color(*page_bg_color)
@@ -216,7 +218,8 @@ def generate():
             pdf.set_text_color(*font_color)
             pdf.set_font('helvetica', 'B', 10)
             
-            header_text = host
+            # Use the safe version of the host name
+            header_text = safe_host
             if not hide_ticket_number:
                 header_text += f" | Ticket {idx + 1}"
             
@@ -250,14 +253,14 @@ def generate():
             pdf.set_text_color(*font_color)
             pdf.set_font('helvetica', 'I', 9)
 
-            footer_text = host
-            if phone: footer_text += f" • {phone}"
-            if message: footer_text += f" • {message}"
+            # Use the safe versions of the text for the footer
+            footer_text = safe_host
+            if safe_phone: footer_text += f" • {safe_phone}"
+            if safe_message: footer_text += f" • {safe_message}"
 
             pdf.set_xy(x0, footer_y_start)
             pdf.cell(tw, fh, footer_text, align='C')
 
-    # Send the PDF to the user
     output_bytes = pdf.output(dest='S').encode('latin1')
     pdf_stream = BytesIO(output_bytes)
     pdf_stream.seek(0)
