@@ -1,0 +1,66 @@
+body {
+  background: #eef2f7;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Card preview area */
+.page-bg-preview {
+  background-color: #ffffff;
+  padding: 16px;
+  border-radius: 20px;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 750px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Ticket Layout */
+.ticket-preview {
+  border-radius: 0px; /* No rounded corners */
+  overflow: hidden;
+  width: 100%;
+  max-width: 500px;
+  background-color: #ffffff; /* This will be overridden by JS for ticketBgColor */
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header/Footer Style */
+.preview-header,
+.preview-footer {
+  text-align: center;
+  font-weight: 600;
+  padding: 8px;
+  font-size: 16px;
+  color: black; /* This will be overridden by JS for fontColor */
+  background-color: #ffd700; /* This will be overridden by JS for headerColor */
+  display: flex; /* For vertical centering in preview */
+  justify-content: center; /* For horizontal centering in preview */
+  align-items: center; /* For vertical centering in preview */
+}
+
+/* Grid Container */
+.ticket-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  border: 2px solid #000; /* Black border around the grid */
+  background-color: #fff; /* This will be overridden by JS for ticketBgColor */
+}
+
+/* Grid Cells */
+.ticket-cell {
+  aspect-ratio: 1 / 1;
+  border: 1px solid #000; /* Black borders between cells */
+  font-weight: bold;
+  font-size: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s ease;
+  background-color: #fff; /* This will be overridden by JS for gridColor */
+  color: #000; /* This will be overridden by JS for fontColor */
+}

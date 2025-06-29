@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome to Housie Ticket Generator</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts - Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Button animation */
+    .btn-gradient {
+      background-image: linear-gradient(to right, #4CAF50 0%, #8BC34A  51%, #4CAF50  100%);
+      background-size: 200% auto;
+      color: white;
+      transition: 0.5s;
+      box-shadow: 0 4px 15px 0 rgba(76, 175, 80, 0.75);
+    }
+
+    .btn-gradient:hover {
+      background-position: right center;
+      color: #fff;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px 0 rgba(76, 175, 80, 0.75);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 min-h-screen flex flex-col items-center justify-center py-10 px-4 sm:px-6 lg:px-8">
+
+  <!-- Header -->
+  <header class="w-full text-center py-8">
+    <h1 class="text-5xl font-extrabold text-gray-900 mb-4 tracking-tight">
+      <span class="block">🎟️ Housie Ticket Generator</span>
+    </h1>
+    <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+      Your go-to solution for creating personalized Tambola (Housie) tickets. Perfect for family gatherings, events, and virtual game nights!
+    </p>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow flex items-center justify-center w-full">
+    <div class="bg-white p-8 sm:p-12 rounded-3xl shadow-xl border border-gray-200 text-center max-w-xl w-full transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+      <h2 class="text-3xl font-bold text-gray-800 mb-6">Ready to Play?</h2>
+      <p class="text-lg text-gray-700 mb-8 leading-relaxed">
+        Effortlessly generate unique and customizable Tambola tickets. Just a few clicks and you're set for endless fun!
+      </p>
+      <a href="/generator" class="btn-gradient px-8 py-3 rounded-full text-lg font-semibold shadow-md inline-block">
+        🚀 Get My Tickets Now!
+      </a>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full py-8 mt-10 bg-gray-800 text-white text-center">
+    <div class="container mx-auto px-4">
+      <p class="mb-4 text-gray-400">&copy; 2025 Housie Ticket Generator. All rights reserved.</p>
+
+      <!-- Improved Social Icons -->
+      <div class="flex justify-center gap-4 mb-4">
+        <a href="https://github.com/gyanvadhel" target="_blank" aria-label="GitHub" class="group">
+          <div class="p-2 rounded-full bg-gray-700 hover:bg-gray-900 transition duration-300 shadow-md group-hover:scale-105 transform">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M12 0C5.372 0 0 5.373 0 12c0 5.303 3.438 9.8 8.207 
+                11.387.6.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416
+                -.546-1.387-1.333-1.756-1.333-1.756-1.087-.731.084-.716.084-.716 
+                1.205.082 1.838 1.233 1.838 1.233 1.07 1.832 2.807 1.305 
+                3.49.998.108-.77.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 
+                0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.118-3.176 
+                0 0 1.008-.322 3.301 1.23a11.56 11.56 0 0 1 3.003-.404c1.02.005 
+                2.046.138 3.004.404 2.291-1.552 3.297-1.23 
+                3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 
+                1.235 3.221 0 4.609-2.807 5.624-5.479 5.922.429.369.814 1.096.814 
+                2.215v3.293c0 .319.192.694.801.576C20.566 21.797 
+                24 17.309 24 12c0-6.627-5.373-12-12-12z" />
+            </svg>
+          </div>
+        </a>
+
+        <a href="https://www.linkedin.com/in/gyan-vadhel-483321290/" target="_blank" aria-label="LinkedIn" class="group">
+          <div class="p-2 rounded-full bg-blue-600 hover:bg-blue-800 transition duration-300 shadow-md group-hover:scale-105 transform">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4.983 3.5C4.983 5 3.86 6.067 2.507 6.067c-1.354 0-2.476-1.066-2.476-2.567 0-1.493 1.122-2.56 2.476-2.56 1.354 0 2.476 1.066 2.476 2.56zM0 8.09h5.005v15.91H0V8.09zM7.497 8.09h4.793v2.178h.067c.667-1.265 2.296-2.598 4.722-2.598C22.998 7.67 24 10.144 24 14.091v9.909h-5.007v-8.77c0-2.092-.037-4.785-2.934-4.785-2.935 0-3.385 2.293-3.385 4.644v8.911H7.497V8.09z" />
+            </svg>
+          </div>
+        </a>
+
+        <a href="https://instagram.com/gyan.fr" target="_blank" aria-label="Instagram" class="group">
+          <div class="p-2 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 transition duration-300 shadow-md group-hover:scale-105 transform">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M7.75 2A5.75 5.75 0 0 0 2 7.75v8.5A5.75 5.75 0 0 0 7.75 22h8.5A5.75 5.75 0 0 0 22 16.25v-8.5A5.75 5.75 0 0 0 16.25 2h-8.5zM12 7.35a4.65 4.65 0 1 1 0 9.3 4.65 4.65 0 0 1 0-9.3zm6.1-.9a1.05 1.05 0 1 1 0 2.1 1.05 1.05 0 0 1 0-2.1zM12 9.5a2.5 2.5 0 1 0 0 5.001A2.5 2.5 0 0 0 12 9.5z" />
+            </svg>
+          </div>
+        </a>
+
+        <a href="https://gyvn.itch.io" target="_blank" aria-label="Itch.io" class="group">
+          <div class="p-2 rounded-full bg-red-600 hover:bg-red-700 transition duration-300 shadow-md group-hover:scale-105 transform">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M2 6.5C2 5.12 3.12 4 4.5 4h15c1.38 0 2.5 1.12 2.5 2.5V17c0 1.38-1.12 2.5-2.5 2.5H4.5C3.12 19.5 2 18.38 2 17V6.5zM7.28 8L9 10.88h6L16.72 8H7.28zM6 12v4h2v-1.5h8V16h2v-4H6z" />
+            </svg>
+          </div>
+        </a>
+      </div>
+
+      <p class="text-sm text-gray-500">Contact me at <a href="mailto:gyanvadhel@gmail.com" class="text-blue-400 hover:underline">gyanvadhel@gmail.com</a></p>
+    </div>
+  </footer>
+
+</body>
+</html>
