@@ -266,9 +266,11 @@ def generate():
                 pdf.set_font('helvetica', 'I', 9)
 
                 # Construct footer text using cleaned inputs
-                footer_text = cleaned_host
-                if cleaned_phone: footer_text += f" • {cleaned_phone}"
-                if cleaned_message: footer_text += f" • {cleaned_message}"
+                fseparator = " | "
+                footer_parts = [cleaned_host]
+                if cleaned_phone: footer_parts.append(cleaned_phone)
+                if cleaned_message: footer_parts.append(cleaned_message)
+                footer_text = separator.join(footer_parts)
 
                 # Truncate footer text if it's too wide for the ticket
                 while pdf.get_string_width(footer_text) > (tw - padding) and len(footer_text) > 0:
