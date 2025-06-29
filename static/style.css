@@ -65,7 +65,7 @@ body {
   color: #000; /* This will be overridden by JS for fontColor */
 }
 
-/* DARK THEME OVERRIDES */
+/* DARK THEME */
 body.dark {
   background: #121212;
   color: #e0e0e0;
