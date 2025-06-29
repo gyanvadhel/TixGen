@@ -202,7 +202,7 @@ def generate():
                 pdf.set_fill_color(*footer_fill)
                 pdf.rect(x0, footer_y, tw, fh, 'F')
                 pdf.set_xy(x0, footer_y)
-                pdf.set_font("helvetica", 'I', 9)
+                pdf.set_font("helvetica", 'B', 10)
                 pdf.cell(tw, fh, footer_text, 0, align='C')
 
         pdf_bytes = pdf.output(dest='S').encode("latin1")
