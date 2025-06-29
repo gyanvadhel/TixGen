@@ -1,6 +1,7 @@
 # TixGen (Housie Ticket Generator)
 
 A user-friendly web application designed to simplify the process of creating personalized Tambola (Housie) tickets for your game nights, events, or casual play.
+Try it out at https://tixgen.onrender.com/
 
 ## ✨ Features
 
