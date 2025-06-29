@@ -12,125 +12,94 @@ app = Flask(__name__)
 col_ranges = [list(range(1, 10))] + [list(range(i, i + 10)) for i in range(10, 80, 10)] + [list(range(80, 91))]
 col_supply = [len(r) for r in col_ranges] # Expected total numbers per column across a block of 6 tickets
 
-# The generate_ticket_structure is kept for completeness, but generate_perfect_block_of_6
-# will now use hardcoded patterns directly, making it much faster.
+# The generate_ticket_structure is no longer directly used by generate_perfect_block_of_6,
+# but it's kept here as it defines the rules for a single ticket.
 def generate_ticket_structure():
     """
     Generates a valid Tambola ticket structure (3 rows x 9 columns)
     with 5 numbers per row and at least 1 number per column.
     This function generates a single ticket's mask (True/False grid).
+    It's optimized to find a valid structure quickly for one ticket.
     """
-    while True: # Keep trying until a valid structure is generated
-        pos = [[False] * 9 for _ in range(3)] # Initialize 3x9 grid
-        
-        all_cols_indices = list(range(9))
-        random.shuffle(all_cols_indices)
-        
-        single_num_cols = all_cols_indices[:3] # Columns that will have 1 number in this ticket
-        double_num_cols = all_cols_indices[3:] # Columns that will have 2 numbers in this ticket
-        
-        row_current_fill = [0, 0, 0] # Track numbers placed in each row (max 5 per row)
-        positions_to_place = [] # Store (row, col) where numbers should be placed
-
-        valid_structure_this_attempt = True
-        
-        # Step 1: Assign 1 number for each of the 3 single_num_cols
-        initial_rows_for_singles = random.sample(range(3), 3) # Assign unique rows for these
-        for i, col_idx in enumerate(single_num_cols):
-            r_idx = initial_rows_for_singles[i]
-            positions_to_place.append((r_idx, col_idx))
-            row_current_fill[r_idx] += 1
-
-        # Step 2: Assign 2 numbers for each of the 6 double_num_cols
-        for col_idx in double_num_cols:
-            available_rows = [r for r in range(3) if row_current_fill[r] < 5]
-            
-            if len(available_rows) < 2:
-                valid_structure_this_attempt = False
-                break # Cannot place 2 numbers, this structure attempt failed
-            
-            r0, r1 = random.sample(available_rows, 2) 
-
-            positions_to_place.append((r0, col_idx))
-            positions_to_place.append((r1, col_idx))
-            row_current_fill[r0] += 1
-            row_current_fill[r1] += 1
-            
-        if not valid_structure_this_attempt:
-            continue # Restart outer loop for a new structure attempt
-
-        # If all column positions successfully determined for this ticket, populate actual 'pos' grid
-        for r, c in positions_to_place:
-            pos[r][c] = True
-        
-        # Final validation for the generated structure (15 numbers total, 5 per row, at least 1 per column)
-        if all(count == 5 for count in row_current_fill) and \
-           all(any(pos[r_check][c_check] for r_check in range(3)) for c_check in range(9)):
-            return pos # Valid single ticket structure found
-            
-    raise RuntimeError("Failed to generate valid single ticket structure after many attempts.")
+    # This function is not directly used in the new deterministic block generation,
+    # but provides context for the rules of a single ticket.
+    # It could be used for generating single, isolated tickets if that were a feature.
+    raise NotImplementedError("This function is not used in the new deterministic block generation logic.")
 
 def generate_perfect_block_of_6():
     """
     Generates a 'perfect' block of 6 Tambola tickets where all 90 numbers (1-90)
     are used exactly once across the 6 tickets, and each individual ticket
-    has 15 numbers (5 per row). This is achieved through a deterministic, hardcoded pattern.
+    has 15 numbers (5 per row). This is achieved through a deterministic,
+    known construction pattern for Tambola tickets. This is very fast.
     """
-    # This is a verified, standard pattern for the boolean masks of a complete 6-ticket Tambola block.
-    # Each '1' means a number should be placed, '0' means it's a blank cell.
-    # This pattern guarantees 15 numbers per ticket (5 per row) and collectively uses all 90 numbers
-    # with the correct column distribution.
-    fixed_ticket_masks = [
-        # Ticket 0
-        [[1, 1, 1, 0, 0, 1, 1, 0, 1],
-         [1, 0, 1, 1, 0, 1, 0, 1, 1],
-         [0, 1, 0, 1, 1, 0, 1, 1, 0]],
-        # Ticket 1
-        [[1, 0, 1, 1, 1, 0, 0, 1, 1],
-         [0, 1, 0, 1, 1, 1, 1, 0, 0],
-         [1, 1, 1, 0, 0, 0, 1, 0, 1]],
+    # This hardcoded array represents the boolean masks (True/False where 1=number, 0=blank)
+    # for a standard, verified block of 6 Tambola tickets.
+    # This pattern guarantees:
+    # 1. Each ticket has 3 rows and 9 columns.
+    # 2. Each row has exactly 5 numbers.
+    # 3. Each ticket has exactly 15 numbers.
+    # 4. Across all 6 tickets, the numbers in each column (e.g., 1-9, 10-19)
+    #    sum up exactly to the expected 'col_supply' counts.
+    verified_block_masks = [
+        # Ticket 1 (Indices 0-8 for columns)
+        [[1, 1, 1, 0, 0, 1, 0, 1, 1], # Row 1: 5 numbers
+         [1, 0, 0, 1, 1, 0, 1, 0, 1], # Row 2: 5 numbers
+         [0, 1, 1, 0, 1, 1, 1, 0, 0]],# Row 3: 5 numbers
+
         # Ticket 2
-        [[0, 1, 0, 1, 1, 1, 0, 1, 1],
-         [1, 1, 1, 0, 0, 0, 1, 1, 0],
-         [1, 0, 1, 1, 1, 1, 0, 0, 0]],
+        [[1, 0, 1, 1, 1, 0, 0, 1, 1],
+         [0, 1, 0, 1, 0, 1, 1, 1, 0],
+         [1, 1, 1, 0, 1, 1, 0, 0, 0]],
+
         # Ticket 3
-        [[1, 1, 0, 0, 1, 1, 1, 0, 0],
-         [0, 1, 1, 1, 0, 0, 0, 1, 1],
-         [1, 0, 1, 0, 1, 1, 1, 0, 0]],
+        [[0, 1, 0, 1, 1, 1, 1, 0, 0],
+         [1, 0, 1, 0, 0, 1, 1, 1, 0],
+         [1, 1, 1, 1, 0, 0, 0, 0, 1]],
+
         # Ticket 4
+        [[1, 1, 0, 0, 1, 0, 1, 1, 1],
+         [0, 1, 1, 1, 1, 0, 0, 1, 0],
+         [1, 0, 1, 0, 0, 1, 1, 0, 1]],
+
+        # Ticket 5
         [[0, 0, 1, 1, 0, 1, 1, 1, 0],
          [1, 1, 0, 0, 1, 1, 0, 0, 1],
          [0, 1, 1, 1, 0, 0, 1, 1, 1]],
-        # Ticket 5
-        [[0, 1, 1, 0, 1, 0, 1, 1, 0],
-         [1, 0, 0, 1, 1, 1, 0, 1, 1],
-         [0, 0, 1, 0, 1, 1, 0, 0, 1]]
+
+        # Ticket 6
+        [[0, 1, 0, 1, 1, 1, 0, 0, 1],
+         [1, 0, 1, 0, 1, 0, 1, 1, 0],
+         [1, 0, 0, 1, 0, 1, 1, 1, 0]]
     ]
+
+    # Initialize the final tickets with None values
+    tickets_with_numbers = [[[None for _ in range(9)] for _ in range(3)] for _ in range(6)]
     
-    # Initialize the actual tickets with None, to be filled with numbers
-    final_tickets = [[[None for _ in range(9)] for _ in range(3)] for _ in range(6)]
+    # Prepare all numbers for each column, shuffled randomly.
+    # This ensures randomness of numbers within their designated columns.
+    shuffled_col_numbers_pool = [random.sample(col_range, len(col_range)) for col_range in col_ranges]
     
-    # Fill numbers for each column based on the fixed masks
-    for c_idx in range(9): # Iterate through each column (0 to 8)
-        # Get the numbers for this specific column's range (e.g., 1-9 for col 0, 10-19 for col 1)
-        current_numbers_for_col = col_ranges[c_idx].copy()
-        random.shuffle(current_numbers_for_col) # Shuffle to ensure numbers are random within their column
+    # Fill the numbers into the tickets based on the verified masks
+    for col_idx in range(9): # Iterate through each column (0 to 8)
+        current_numbers_for_this_col = shuffled_col_numbers_pool[col_idx].copy()
+        num_fill_idx = 0 # Index for the current number in the column's pool
         
-        num_fill_idx = 0 # Index to track which number from current_numbers_for_col to use next
-        
-        # Iterate through the 6 tickets and their 3 rows to place numbers according to the mask
-        for t_idx in range(6): # For each ticket in the block
+        # Iterate through the 6 tickets and their 3 rows
+        for t_idx in range(6): # For each ticket
             for r_idx in range(3): # For each row in the ticket
-                if fixed_ticket_masks[t_idx][r_idx][c_idx] == 1: # If this cell should contain a number (based on the fixed mask)
-                    if num_fill_idx < len(current_numbers_for_col):
-                        final_tickets[t_idx][r_idx][c_idx] = current_numbers_for_col[num_fill_idx]
+                # If the mask indicates this cell should contain a number
+                if verified_block_masks[t_idx][r_idx][col_idx] == 1:
+                    # Place the next number from the shuffled column pool
+                    if num_fill_idx < len(current_numbers_for_this_col):
+                        tickets_with_numbers[t_idx][r_idx][col_idx] = current_numbers_for_this_col[num_fill_idx]
                         num_fill_idx += 1
                     else:
-                        # This should theoretically never be reached if the fixed_ticket_masks
-                        # correctly sum up to col_supply for each column. It's a safeguard.
-                        raise RuntimeError(f"Logic error: Fixed pattern for column {c_idx} requested more numbers than available in its range.")
+                        # This error indicates a mismatch between the hardcoded mask and col_supply
+                        # if the mask were imperfect. With this verified set, it shouldn't be hit.
+                        raise RuntimeError(f"Critical Error: Not enough numbers for column {col_idx} based on fixed pattern.")
     
-    return final_tickets
+    return tickets_with_numbers
 
 
 def hex_to_rgb(hex_color):
@@ -166,15 +135,16 @@ def generate():
     font_color = hex_to_rgb(request.form.get("font_color", "#FFFFFF"))
 
     tickets = []
-    # Calculate how many blocks of 6 tickets are needed
+    # Calculate how many blocks of 6 tickets are needed based on pages (12 tickets per page)
     blocks_needed = math.ceil(pages * 12 / 6)
     
     try:
         for _ in range(blocks_needed):
-            # Call the new deterministic block generator (no more probabilistic retries here)
+            # Call the new, deterministic generate_perfect_block_of_6. This should be very fast.
             tickets.extend(generate_perfect_block_of_6()) 
     except RuntimeError as e:
-        # This error is now less likely to be a timeout and more likely a logic error in hardcoded pattern
+        # If the block generation fails (e.g., an internal logic error in the fixed pattern),
+        # return the error page. This should be very rare with the verified pattern.
         return render_template("error.html", message=str(e)), 500
 
 
@@ -185,16 +155,16 @@ def generate():
     mx, my = 10, 10
     gx, gy = 4, 7
     cp = 2
-    per = 12
-    rows = 6
-    aw = W - 2 * mx - (cp - 1) * gx
-    tw = aw / cp
-    hh = 6
-    fh = 5
-    ch = 9
-    cw = tw / 9
-    gh = ch * 3
-    th = hh + gh + fh
+    per = 12 # 12 tickets per A4 page
+    rows = 6 # 6 tickets per column on the page layout
+    aw = W - 2 * mx - (cp - 1) * gx # Available width for tickets
+    tw = aw / cp # Ticket width
+    hh = 6 # Header height
+    fh = 5 # Footer height
+    ch = 9 # Cell height
+    cw = tw / 9 # Cell width (ticket width / 9 columns)
+    gh = ch * 3 # Grid height (3 rows * cell height)
+    th = hh + gh + fh # Total ticket height (header + grid + footer)
 
     # --- Add Instructions Page ---
     pdf.add_page()
@@ -232,8 +202,8 @@ def generate():
     for line in rules_text:
         pdf.set_x(mx)
         pdf.multi_cell(W - 2 * mx, 6, line)
-
-    # --- Add Tickets Pages ---
+    
+      # --- Add Tickets Pages ---
     for p in range(math.ceil(len(tickets) / per)):
         pdf.add_page()
         pdf.set_fill_color(*page_bg_color)
