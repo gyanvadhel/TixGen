@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, send_file
 from io import BytesIO
 import random
 import logging
-from fpdf import FPDF  # fpdf2
+from fpdf import FPDF
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -15,15 +15,17 @@ def hex_to_rgb(hex_color):
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
 def generate_perfect_block_of_6():
-    number_pool = [list(range(1 + i * 10, 10 + i * 10)) for i in range(8)]
-    number_pool.append(list(range(80, 91)))
-    number_pool[0] = list(range(1, 10))
-
+    """
+    Generates a block of 6 valid Tambola tickets without recursion,
+    ensuring each ticket has exactly 15 numbers (5 per row).
+    """
+    # 1. Prepare and shuffle the numbers for each column
+    number_pool = [list(range(1, 10))] + [list(range(i, i + 10)) for i in range(10, 80, 10)] + [list(range(80, 91))]
     for col in number_pool:
         random.shuffle(col)
 
+    # 2. Create ticket skeletons and perform initial random distribution
     tickets = [[[None for _ in range(9)] for _ in range(3)] for _ in range(6)]
-
     for c_idx, col_nums in enumerate(number_pool):
         positions = [(t, r) for t in range(6) for r in range(3)]
         selected = random.sample(positions, len(col_nums))
@@ -31,30 +33,50 @@ def generate_perfect_block_of_6():
             t, r = selected[i]
             tickets[t][r][c_idx] = num
 
+    # 3. Balance all tickets until every row has exactly 5 numbers
     while True:
         row_counts = [[sum(1 for cell in row if cell) for row in t] for t in tickets]
-        over = [(t, r) for t in range(6) for r in range(3) if row_counts[t][r] > 5]
-        under = [(t, r) for t in range(6) for r in range(3) if row_counts[t][r] < 5]
-        if not over or not under:
-            break
-        from_t, from_r = random.choice(over)
-        to_t, to_r = random.choice(under)
-        for c in range(9):
-            if tickets[from_t][from_r][c] and not tickets[to_t][to_r][c]:
-                tickets[to_t][to_r][c] = tickets[from_t][from_r][c]
-                tickets[from_t][from_r][c] = None
-                break
+        over_filled = [(t, r) for t in range(6) for r in range(3) if row_counts[t][r] > 5]
+        under_filled = [(t, r) for t in range(6) for r in range(3) if row_counts[t][r] < 5]
 
+        # If both lists are empty, balance is perfect. We are done.
+        if not over_filled and not under_filled:
+            break
+
+        # A more stable and efficient way to find and perform a swap
+        swap_made = False
+        # Iterate through each over-filled row to find a number to move
+        for from_t, from_r in over_filled:
+            # Find a column in this row that actually has a number
+            possible_cols = [c for c, cell in enumerate(tickets[from_t][from_r]) if cell is not None]
+            random.shuffle(possible_cols)
+
+            for c_idx in possible_cols:
+                # Find an under-filled row that is empty in this specific column
+                for to_t, to_r in under_filled:
+                    if tickets[to_t][to_r][c_idx] is None:
+                        # Found a valid swap, perform it
+                        tickets[to_t][to_r][c_idx] = tickets[from_t][from_r][c_idx]
+                        tickets[from_t][from_r][c_idx] = None
+                        swap_made = True
+                        break  # Exit inner 'under_filled' loop
+                if swap_made:
+                    break  # Exit 'possible_cols' loop
+            if swap_made:
+                break # Exit 'over_filled' loop to restart the while loop
+
+    # 4. Sort the numbers within each column of each ticket
     for ticket in tickets:
         for c in range(9):
-            col = [ticket[r][c] for r in range(3) if ticket[r][c]]
-            col.sort()
+            col_values = [ticket[r][c] for r in range(3) if ticket[r][c]]
+            col_values.sort()
             i = 0
             for r in range(3):
                 if ticket[r][c]:
-                    ticket[r][c] = col[i]
+                    ticket[r][c] = col_values[i]
                     i += 1
     return tickets
+
 
 @app.route('/')
 def landing_page():
@@ -108,36 +130,27 @@ def generate():
         gh = ch * 3
         th = hh + gh + fh
 
-        # --- Instructions Page (white background, black text, bigger font) ---
+        # --- Instructions Page ---
         pdf.add_page()
         pdf.set_fill_color(255, 255, 255)
         pdf.rect(0, 0, W, H, 'F')
         pdf.set_text_color(0, 0, 0)
-
         pdf.set_font("helvetica", 'B', 22)
         pdf.set_xy(mx, my)
         pdf.cell(W - 2 * mx, 12, 'How to Play Tambola (Housie)', align='C')
         pdf.ln(18)
-
         pdf.set_font("helvetica", '', 14)
         instructions = [
-            "Tambola (also called Housie) is a game of luck and numbers.",
-            "",
-            "Objective:",
-            "Mark off numbers on your ticket to complete winning patterns.",
-            "",
-            "How to Play:",
-            "1. A number will be called out (between 1 to 90).",
+            "Tambola (also called Housie) is a game of luck and numbers.", "",
+            "Objective:", "Mark off numbers on your ticket to complete winning patterns.", "",
+            "How to Play:", "1. A number will be called out (between 1 to 90).",
             "2. If it appears on your ticket, mark it.",
-            "3. Be the first to complete and claim a winning pattern.",
-            "",
-            "Common Winning Patterns:",
-            "- Early Five: First 5 numbers marked on a ticket.",
+            "3. Be the first to complete and claim a winning pattern.", "",
+            "Common Winning Patterns:", "- Early Five: First 5 numbers marked on a ticket.",
             "- Top Line: All 5 numbers in the top row.",
             "- Middle Line: All 5 numbers in the middle row.",
             "- Bottom Line: All 5 numbers in the bottom row.",
-            "- Full House: All 15 numbers on your ticket.",
-            "",
+            "- Full House: All 15 numbers on your ticket.", "",
             "Note: Call out your win immediately. Late claims are invalid!"
         ]
         for line in instructions:
@@ -168,7 +181,6 @@ def generate():
                 pdf.rect(x0, y0, tw, hh, 'F')
                 pdf.set_text_color(*font_color)
                 pdf.set_font("helvetica", 'B', 10)
-
                 header_text = host
                 if not hide_ticket_number:
                     header_text += f" | Ticket {idx + 1}"
@@ -188,11 +200,14 @@ def generate():
                         if num:
                             txt = str(num)
                             sw = pdf.get_string_width(txt)
-                            pdf.set_xy(cx + (cw - sw) / 2.8, cy + (ch - pdf.font_size) / 2 + 1)
+                            pdf.set_text_color(*font_color)
+                            pdf.set_xy(cx + (cw - sw) / 2.8, cy + (ch - pdf.font_size) / 1.8 + 1)
                             pdf.cell(sw, pdf.font_size, txt, 0)
 
                 # Footer
-                footer_parts = [host]
+                pdf.set_font("helvetica", 'B', 10)
+                pdf.set_text_color(*font_color)
+                footer_parts = []
                 if phone: footer_parts.append(phone)
                 if message: footer_parts.append(message)
                 footer_text = " | ".join(footer_parts)
@@ -202,16 +217,15 @@ def generate():
                 pdf.set_fill_color(*footer_fill)
                 pdf.rect(x0, footer_y, tw, fh, 'F')
                 pdf.set_xy(x0, footer_y)
-                pdf.set_font("helvetica", 'B', 10)
                 pdf.cell(tw, fh, footer_text, 0, align='C')
 
-        pdf_bytes = pdf.output(dest='S').encode("latin1")
+        # Use fpdf2's recommended byte output
+        pdf_bytes = pdf.output()
         return send_file(BytesIO(pdf_bytes), download_name="tixgen.pdf", as_attachment=True, mimetype='application/pdf')
-
 
     except Exception as e:
         logging.exception("Error during PDF generation:")
-        return f"<h1>Internal Server Error</h1><p>{e}</p>", 500
+        return f"<h1>Internal Server Error</h1><p>An error occurred: {e}</p>", 500
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0')
