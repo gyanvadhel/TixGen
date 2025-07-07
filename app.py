@@ -219,9 +219,14 @@ def generate():
                 pdf.set_xy(x0, footer_y)
                 pdf.cell(tw, fh, footer_text, 0, align='C')
 
-        # Use fpdf2's recommended byte output
-        pdf_bytes = pdf.output()
+        output = pdf.output(dest='S')  # Ensure string output
+        if isinstance(output, str):
+            pdf_bytes = output.encode('latin1')  # Required for FPDF string outputs
+        else:
+            pdf_bytes = output  # Already bytes if using fpdf2+
+
         return send_file(BytesIO(pdf_bytes), download_name="tixgen.pdf", as_attachment=True, mimetype='application/pdf')
+
 
     except Exception as e:
         logging.exception("Error during PDF generation:")
