@@ -5,17 +5,20 @@ let isInitialized = false;
 function initializeApp() {
   if (isInitialized) return;
   
+  console.log('Initializing app...');
   createPreviewGrid();
   setupEventListeners();
   initializeDarkMode();
   updatePreview();
   
   isInitialized = true;
+  console.log('App initialized successfully');
 }
 
 // Create the preview grid with sample numbers
 function createPreviewGrid() {
   const grid = document.getElementById("preview-grid");
+  console.log('Creating preview grid, grid element:', grid);
   if (!grid) return;
   
   grid.innerHTML = "";
@@ -40,10 +43,13 @@ function createPreviewGrid() {
       grid.appendChild(cell);
     }
   }
+  console.log('Preview grid created with', grid.children.length, 'cells');
 }
 
 // Update the live preview
 function updatePreview() {
+  console.log('Updating preview...');
+  
   const elements = {
     name: document.querySelector('input[name="name"]'),
     phone: document.querySelector('input[name="phone"]'),
@@ -61,7 +67,10 @@ function updatePreview() {
   };
 
   // Check if all required elements exist
-  if (!elements.name || !elements.previewHeader) return;
+  if (!elements.name || !elements.previewHeader) {
+    console.log('Missing required elements for preview update');
+    return;
+  }
 
   // Get values
   const name = elements.name.value || "Host";
@@ -73,6 +82,7 @@ function updatePreview() {
   const fontColor = elements.fontColor?.value || "#1e293b";
   const pageBgColor = elements.pageBgColor?.value || "#ffffff";
 
+  console.log('Preview values:', { name, headerColor, gridColor, fontColor, pageBgColor });
   // Update page background
   if (elements.pdfBg) {
     elements.pdfBg.style.backgroundColor = pageBgColor;
@@ -108,12 +118,15 @@ function updatePreview() {
   if (elements.previewGrid) {
     elements.previewGrid.style.borderColor = '#e2e8f0';
     const cells = elements.previewGrid.querySelectorAll(".ticket-cell");
+    console.log('Updating', cells.length, 'grid cells');
     cells.forEach(cell => {
       cell.style.backgroundColor = gridColor;
       cell.style.borderColor = '#e2e8f0';
       cell.style.color = fontColor;
     });
   }
+  
+  console.log('Preview updated successfully');
 }
 
 // Setup all event listeners

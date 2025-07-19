@@ -412,6 +412,14 @@ body {
   background: #ffffff;
 }
 
+.page-bg-preview {
+  padding: 1.5rem;
+  border-radius: 15px;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+}
+
 /* Ticket Preview */
 .ticket-preview {
   border-radius: 12px;
@@ -445,6 +453,19 @@ body {
 
 .ticket-cell {
   aspect-ratio: 1;
+.ticket-cell {
+  aspect-ratio: 1;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #2d3748;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
   border: 1px solid #e2e8f0;
   font-weight: 600;
   font-size: 0.8rem;
