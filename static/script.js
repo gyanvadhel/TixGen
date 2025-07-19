@@ -1,103 +1,239 @@
+// Global state
+let isInitialized = false;
+
+// Initialize the application
+function initializeApp() {
+  if (isInitialized) return;
+  
+  createPreviewGrid();
+  setupEventListeners();
+  initializeDarkMode();
+  updatePreview();
+  
+  isInitialized = true;
+}
+
+// Create the preview grid with sample numbers
 function createPreviewGrid() {
   const grid = document.getElementById("preview-grid");
-  grid.innerHTML = ""; // Clear existing cells
-  for (let i = 0; i < 27; i++) {
-    const cell = document.createElement("div");
-    cell.className = "ticket-cell";
-    cell.innerText = "12"; // Placeholder number
-    grid.appendChild(cell);
-  }
-}
-
-function updatePreview() {
-  const name = document.querySelector('input[name="name"]').value || "Host";
-  const phone = document.querySelector('input[name="phone"]').value.trim();
-  const message = document.querySelector('input[name="custom_message"]').value.trim();
-  const hideTicketNumber = document.getElementById("hide_ticket_number").checked;
-
-  const headerColor = document.querySelector('input[name="header_color"]').value;
-  const gridColor = document.querySelector('input[name="grid_color"]').value;
-  const fontColor = document.querySelector('input[name="font_color"]').value; // Get the new font color
+  if (!grid) return;
   
-  // Overall ticket background will be same as header/footer
-  const ticketBgColor = headerColor; 
-  const pageBgColor = document.querySelector('input[name="page_bg_color"]').value;
-
-  // Update page background in preview
-  document.getElementById("pdf-bg").style.backgroundColor = pageBgColor;
-
-  // Set ticket header
-  const header = document.getElementById("preview-header");
-  header.style.backgroundColor = headerColor;
-  header.style.color = fontColor; // Use selected font color
-  header.innerText = hideTicketNumber ? name : `${name} | Ticket #`; // Update based on checkbox
-
-  // Set ticket footer
-  const footer = document.getElementById("preview-footer");
-  footer.style.backgroundColor = headerColor; // Footer background is header color
-  footer.style.color = fontColor; // Use selected font color
-
-    // DARK MODE TOGGLE
-  const darkToggle = document.getElementById("darkModeToggle");
-  const prefersDark = localStorage.getItem("darkMode") === "true";
-  document.body.classList.toggle("dark", prefersDark);
-  darkToggle.checked = prefersDark;
-
-  darkToggle.addEventListener("change", () => {
-    const isDark = darkToggle.checked;
-    document.body.classList.toggle("dark", isDark);
-    localStorage.setItem("darkMode", isDark);
-  });
-
+  grid.innerHTML = "";
   
-  // Construct footer text: only phone and message
-  let footerText = "";
-  if (phone) {
-    footerText += phone;
-  }
-  if (message) {
-    if (footerText) { // Add a separator if phone number exists
-      footerText += " - ";
+  // Sample ticket data for preview
+  const sampleNumbers = [
+    [null, 12, null, 34, null, 56, null, 78, null],
+    [5, null, 23, null, 45, null, 67, null, 89],
+    [null, 18, null, 39, null, 52, null, 71, null]
+  ];
+  
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 9; col++) {
+      const cell = document.createElement("div");
+      cell.className = "ticket-cell";
+      
+      const number = sampleNumbers[row][col];
+      if (number) {
+        cell.textContent = number;
+      }
+      
+      grid.appendChild(cell);
     }
-    footerText += message;
   }
-  footer.innerText = footerText || "(Optional info)"; // Display placeholder if both are empty
-
-  // Update the entire ticket-preview background to ticketBgColor (which is now headerColor)
-  // This covers the space behind the grid cells, header and footer are drawn on top.
-  document.querySelector('.ticket-preview').style.backgroundColor = ticketBgColor;
-
-  // Update ticket grid border and cell colors
-  document.getElementById("preview-grid").style.borderColor = '#000000'; // Black border for grid container
-  const cells = document.querySelectorAll(".ticket-cell");
-  cells.forEach(cell => {
-    cell.style.backgroundColor = gridColor; // Cell background is grid color
-    cell.style.borderColor = '#000000'; // Cell borders are black
-    cell.style.color = fontColor; // Use selected font color for numbers
-  });
 }
 
-// Ensure the grid is created and preview is updated when the DOM is fully loaded
-document.addEventListener("DOMContentLoaded", () => {
-  createPreviewGrid();
-  updatePreview(); // Initial update
-  // DARK MODE TOGGLE
+// Update the live preview
+function updatePreview() {
+  const elements = {
+    name: document.querySelector('input[name="name"]'),
+    phone: document.querySelector('input[name="phone"]'),
+    message: document.querySelector('input[name="custom_message"]'),
+    hideTicketNumber: document.getElementById("hide_ticket_number"),
+    headerColor: document.querySelector('input[name="header_color"]'),
+    gridColor: document.querySelector('input[name="grid_color"]'),
+    fontColor: document.querySelector('input[name="font_color"]'),
+    pageBgColor: document.querySelector('input[name="page_bg_color"]'),
+    previewHeader: document.getElementById("preview-header"),
+    previewFooter: document.getElementById("preview-footer"),
+    pdfBg: document.getElementById("pdf-bg"),
+    ticketPreview: document.querySelector('.ticket-preview'),
+    previewGrid: document.getElementById("preview-grid")
+  };
+
+  // Check if all required elements exist
+  if (!elements.name || !elements.previewHeader) return;
+
+  // Get values
+  const name = elements.name.value || "Host";
+  const phone = elements.phone?.value.trim() || "";
+  const message = elements.message?.value.trim() || "";
+  const hideTicketNumber = elements.hideTicketNumber?.checked || false;
+  const headerColor = elements.headerColor?.value || "#667eea";
+  const gridColor = elements.gridColor?.value || "#f8fafc";
+  const fontColor = elements.fontColor?.value || "#1e293b";
+  const pageBgColor = elements.pageBgColor?.value || "#ffffff";
+
+  // Update page background
+  if (elements.pdfBg) {
+    elements.pdfBg.style.backgroundColor = pageBgColor;
+  }
+
+  // Update header
+  if (elements.previewHeader) {
+    elements.previewHeader.style.backgroundColor = headerColor;
+    elements.previewHeader.style.color = fontColor;
+    elements.previewHeader.textContent = hideTicketNumber ? name : `${name} | Ticket #`;
+  }
+
+  // Update footer
+  if (elements.previewFooter) {
+    elements.previewFooter.style.backgroundColor = headerColor;
+    elements.previewFooter.style.color = fontColor;
+    
+    let footerText = "";
+    if (phone) footerText += phone;
+    if (message) {
+      if (footerText) footerText += " - ";
+      footerText += message;
+    }
+    elements.previewFooter.textContent = footerText || "Optional info";
+  }
+
+  // Update ticket background
+  if (elements.ticketPreview) {
+    elements.ticketPreview.style.backgroundColor = headerColor;
+  }
+
+  // Update grid cells
+  if (elements.previewGrid) {
+    elements.previewGrid.style.borderColor = '#e2e8f0';
+    const cells = elements.previewGrid.querySelectorAll(".ticket-cell");
+    cells.forEach(cell => {
+      cell.style.backgroundColor = gridColor;
+      cell.style.borderColor = '#e2e8f0';
+      cell.style.color = fontColor;
+    });
+  }
+}
+
+// Setup all event listeners
+function setupEventListeners() {
+  // Input event listeners for real-time updates
+  const inputSelectors = [
+    'input[name="name"]',
+    'input[name="phone"]',
+    'input[name="custom_message"]',
+    'input[name="header_color"]',
+    'input[name="grid_color"]',
+    'input[name="font_color"]',
+    'input[name="page_bg_color"]'
+  ];
+
+  inputSelectors.forEach(selector => {
+    const element = document.querySelector(selector);
+    if (element) {
+      element.addEventListener('input', debounce(updatePreview, 100));
+    }
+  });
+
+  // Checkbox event listener
+  const hideTicketCheckbox = document.getElementById('hide_ticket_number');
+  if (hideTicketCheckbox) {
+    hideTicketCheckbox.addEventListener('change', updatePreview);
+  }
+
+  // Form submission enhancement
+  const form = document.querySelector('.ticket-form');
+  if (form) {
+    form.addEventListener('submit', handleFormSubmission);
+  }
+}
+
+// Handle form submission with loading state
+function handleFormSubmission(event) {
+  const submitButton = event.target.querySelector('.generate-btn');
+  if (submitButton) {
+    const originalText = submitButton.innerHTML;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    submitButton.disabled = true;
+    
+    // Reset button after 10 seconds (fallback)
+    setTimeout(() => {
+      submitButton.innerHTML = originalText;
+      submitButton.disabled = false;
+    }, 10000);
+  }
+}
+
+// Dark mode functionality
+function initializeDarkMode() {
   const darkToggle = document.getElementById("darkModeToggle");
+  if (!darkToggle) return;
+
+  // Load saved preference
   const prefersDark = localStorage.getItem("darkMode") === "true";
   document.body.classList.toggle("dark", prefersDark);
   darkToggle.checked = prefersDark;
 
+  // Add event listener
   darkToggle.addEventListener("change", () => {
     const isDark = darkToggle.checked;
     document.body.classList.toggle("dark", isDark);
     localStorage.setItem("darkMode", isDark);
+    
+    // Add smooth transition
+    document.body.style.transition = "all 0.3s ease";
+    setTimeout(() => {
+      document.body.style.transition = "";
+    }, 300);
   });
+}
 
-  // Add event listeners to all relevant input fields for continuous updates
-  document.querySelectorAll('input[type="color"], input[type="text"], input[type="tel"], input[type="number"]').forEach(input => {
-    input.addEventListener('input', updatePreview); // 'input' event for continuous updates
+// Utility function for debouncing
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// Smooth animations for form interactions
+function addFormAnimations() {
+  const formInputs = document.querySelectorAll('.form-input, .color-input');
+  
+  formInputs.forEach(input => {
+    input.addEventListener('focus', function() {
+      this.parentElement.style.transform = 'scale(1.02)';
+      this.parentElement.style.transition = 'transform 0.2s ease';
+    });
+    
+    input.addEventListener('blur', function() {
+      this.parentElement.style.transform = 'scale(1)';
+    });
   });
+}
 
-  // Special handling for checkbox as it uses 'change' event
-  document.getElementById('hide_ticket_number').addEventListener('change', updatePreview);
+// Initialize when DOM is loaded
+document.addEventListener("DOMContentLoaded", () => {
+  initializeApp();
+  addFormAnimations();
 });
+
+// Handle page visibility changes
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && isInitialized) {
+    updatePreview();
+  }
+});
+
+// Export functions for potential external use
+window.TixGenApp = {
+  updatePreview,
+  initializeApp,
+  createPreviewGrid
+};

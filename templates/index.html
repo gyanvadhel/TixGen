@@ -3,82 +3,234 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Housie Ticket Generator</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>TixGen - Housie Ticket Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link href="/static/style.css" rel="stylesheet" />
 </head>
 <body>
-  <div class="container py-5">
-    <h2 class="mb-4 text-center fw-bold display-6 text-primary">🎟️ Housie Ticket Generator</h2>
-
-    <!-- Theme Toggle -->
-    <div class="d-flex justify-content-end mb-3">
-      <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" id="darkModeToggle" />
-        <label class="form-check-label" for="darkModeToggle">Dark Theme</label>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <i class="fas fa-ticket-alt"></i>
+        <span>TixGen</span>
+      </div>
+      <div class="nav-actions">
+        <div class="theme-toggle">
+          <input type="checkbox" id="darkModeToggle" class="theme-checkbox" />
+          <label for="darkModeToggle" class="theme-label">
+            <i class="fas fa-sun"></i>
+            <i class="fas fa-moon"></i>
+          </label>
+        </div>
+        <a href="/" class="nav-link">
+          <i class="fas fa-home"></i>
+          Home
+        </a>
       </div>
     </div>
+  </nav>
 
-    <div class="row g-4">
-      <!-- LEFT: Form -->
-      <div class="col-lg-6">
-        <div class="card shadow-lg border-0 p-4">
-          <form method="POST" action="/generate">
-            <div class="mb-3">
-              <label for="name" class="form-label">Name</label>
-              <input class="form-control rounded-pill" type="text" id="name" name="name" placeholder="Host" value="Host" oninput="updatePreview()" required />
+  <div class="main-container">
+    <!-- Header -->
+    <header class="page-header">
+      <h1 class="page-title">
+        <i class="fas fa-magic"></i>
+        Create Your Tickets
+      </h1>
+      <p class="page-subtitle">
+        Customize every detail and generate professional Housie tickets instantly
+      </p>
+    </header>
+
+    <div class="content-grid">
+      <!-- Form Section -->
+      <div class="form-section">
+        <div class="form-card">
+          <div class="form-header">
+            <h2>
+              <i class="fas fa-cog"></i>
+              Ticket Settings
+            </h2>
+            <p>Personalize your tickets with custom details and colors</p>
+          </div>
+          
+          <form method="POST" action="/generate" class="ticket-form">
+            <div class="form-group">
+              <label for="name" class="form-label">
+                <i class="fas fa-user"></i>
+                Host Name
+              </label>
+              <input 
+                class="form-input" 
+                type="text" 
+                id="name" 
+                name="name" 
+                placeholder="Enter host name" 
+                value="Host" 
+                required 
+              />
             </div>
-            <div class="mb-3">
-              <label for="phone" class="form-label">Phone</label>
-              <input class="form-control rounded-pill" type="text" id="phone" name="phone" placeholder="(optional)" oninput="updatePreview()" />
+
+            <div class="form-group">
+              <label for="phone" class="form-label">
+                <i class="fas fa-phone"></i>
+                Phone Number
+              </label>
+              <input 
+                class="form-input" 
+                type="text" 
+                id="phone" 
+                name="phone" 
+                placeholder="Optional contact number" 
+              />
             </div>
-            <div class="mb-3">
-              <label for="custom_message" class="form-label">Fun Message</label>
-              <input class="form-control rounded-pill" type="text" id="custom_message" name="custom_message" placeholder="e.g., Let's Play!" oninput="updatePreview()" />
+
+            <div class="form-group">
+              <label for="custom_message" class="form-label">
+                <i class="fas fa-comment"></i>
+                Custom Message
+              </label>
+              <input 
+                class="form-input" 
+                type="text" 
+                id="custom_message" 
+                name="custom_message" 
+                placeholder="e.g., Let's Play Housie!" 
+              />
             </div>
-            <div class="form-check form-switch mb-3">
-              <input class="form-check-input" type="checkbox" id="hide_ticket_number" name="hide_ticket_number" onchange="updatePreview()" />
-              <label class="form-check-label" for="hide_ticket_number">Hide Ticket Number</label>
-            </div>
-            <div class="mb-3">
-              <label for="pages" class="form-label">Pages (1-5)</label>
-              <input class="form-control rounded-pill" type="number" id="pages" name="pages" value="1" min="1" max="5" />
-            </div>
-            <div class="row">
-              <div class="col-6 mb-3">
-                <label for="header_color" class="form-label">Header/Footer Color</label>
-                <input name="header_color" type="color" class="form-control form-control-color" id="header_color" value="#3b82f6" onchange="updatePreview()" />
+
+            <div class="form-group">
+              <div class="checkbox-group">
+                <input 
+                  type="checkbox" 
+                  id="hide_ticket_number" 
+                  name="hide_ticket_number" 
+                  class="form-checkbox"
+                />
+                <label for="hide_ticket_number" class="checkbox-label">
+                  <i class="fas fa-eye-slash"></i>
+                  Hide ticket numbers in header
+                </label>
               </div>
-              <div class="col-6 mb-3">
-                <label for="grid_color" class="form-label">Grid Cell Color</label>
-                <input name="grid_color" type="color" class="form-control form-control-color" id="grid_color" value="#f8fafc" onchange="updatePreview()" />
+            </div>
+
+            <div class="form-group">
+              <label for="pages" class="form-label">
+                <i class="fas fa-file-alt"></i>
+                Number of Pages
+              </label>
+              <input 
+                class="form-input" 
+                type="number" 
+                id="pages" 
+                name="pages" 
+                value="1" 
+                min="1" 
+                max="5" 
+              />
+              <small class="form-hint">Each page contains 12 tickets</small>
+            </div>
+
+            <div class="color-grid">
+              <div class="color-group">
+                <label for="header_color" class="color-label">
+                  <i class="fas fa-paint-brush"></i>
+                  Header Color
+                </label>
+                <input 
+                  name="header_color" 
+                  type="color" 
+                  class="color-input" 
+                  id="header_color" 
+                  value="#667eea" 
+                />
               </div>
-              <div class="col-6 mb-3">
-                <label for="font_color" class="form-label">Font Color</label>
-                <input name="font_color" type="color" class="form-control form-control-color" id="font_color" value="#1e293b" onchange="updatePreview()" />
+
+              <div class="color-group">
+                <label for="grid_color" class="color-label">
+                  <i class="fas fa-th"></i>
+                  Grid Color
+                </label>
+                <input 
+                  name="grid_color" 
+                  type="color" 
+                  class="color-input" 
+                  id="grid_color" 
+                  value="#f8fafc" 
+                />
               </div>
-              <div class="col-6 mb-3">
-                <label for="page_bg_color" class="form-label">PDF Page Background</label>
-                <input name="page_bg_color" type="color" class="form-control form-control-color" id="page_bg_color" value="#ffffff" onchange="updatePreview()" />
+
+              <div class="color-group">
+                <label for="font_color" class="color-label">
+                  <i class="fas fa-font"></i>
+                  Font Color
+                </label>
+                <input 
+                  name="font_color" 
+                  type="color" 
+                  class="color-input" 
+                  id="font_color" 
+                  value="#1e293b" 
+                />
+              </div>
+
+              <div class="color-group">
+                <label for="page_bg_color" class="color-label">
+                  <i class="fas fa-fill"></i>
+                  Page Background
+                </label>
+                <input 
+                  name="page_bg_color" 
+                  type="color" 
+                  class="color-input" 
+                  id="page_bg_color" 
+                  value="#ffffff" 
+                />
               </div>
             </div>
-            <button type="submit" class="btn btn-primary rounded-pill w-100 mt-2">🎫 Generate Tickets</button>
+
+            <button type="submit" class="generate-btn">
+              <i class="fas fa-download"></i>
+              Generate PDF Tickets
+            </button>
           </form>
         </div>
       </div>
 
-      <!-- RIGHT: Preview -->
-      <div class="col-lg-6 d-flex justify-content-center align-items-start">
-        <div id="pdf-bg" class="page-bg-preview">
-          <div class="ticket-preview">
-            <div id="preview-header" class="preview-header">Host | Ticket #</div>
-            <div id="preview-grid" class="ticket-grid"></div>
-            <div id="preview-footer" class="preview-footer">Host</div>
+      <!-- Preview Section -->
+      <div class="preview-section">
+        <div class="preview-card">
+          <div class="preview-header">
+            <h2>
+              <i class="fas fa-eye"></i>
+              Live Preview
+            </h2>
+            <p>See how your ticket will look</p>
+          </div>
+          
+          <div class="preview-container">
+            <div id="pdf-bg" class="page-bg-preview">
+              <div class="ticket-preview">
+                <div id="preview-header" class="ticket-header">Host | Ticket #</div>
+                <div id="preview-grid" class="ticket-grid"></div>
+                <div id="preview-footer" class="ticket-footer">Optional info</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="preview-info">
+            <div class="info-item">
+              <i class="fas fa-info-circle"></i>
+              <span>Preview updates in real-time as you make changes</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
   <script src="/static/script.js"></script>
 </body>
 </html>
